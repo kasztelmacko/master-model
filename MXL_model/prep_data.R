@@ -46,3 +46,113 @@ for (i in 1:nrow(survey)) {
     }
 }
 
+# create _this variables
+defaults <- c("mcdonalds", "burger king", "wendys", "max burgers", "popeyes","subway", "kfc", "pizza hut", "taco bell", "dominos", "starbucks", "dunkin donuts", "panda express", "chipotle", "five guys", "panera bread", "chick fil a", "north fish", "shake shack")
+brand_mapping <- list(
+    "mcdonalds" = "brand_mcdonalds",
+    "burger king" = "brand_burger_king",
+    "max burgers" = "brand_max_burger",
+    "wendys" = "brand_wendys"
+)
+clean_brand_names <- function(brand_vec) {
+  brand_vec <- lapply(brand_vec, tolower)
+  brand_vec <- lapply(brand_vec, function(x) {
+    x <- gsub("[^[:alnum:] ]", "", x)
+    x <- gsub("\\s+", " ", x)
+    x <- trimws(x)
+    return(x)
+  })
+  return(brand_vec)
+}
+add_brand_indicators <- function(design, survey, survey_column_name) {
+    new_col_name <- paste0(survey_column_name, "_this")
+    design[[new_col_name]] <- 0
+    
+    for (i in 1:nrow(survey)) {
+        respondent_id <- survey$respondent[i]
+        brand_list <- tolower(survey[[survey_column_name]][[i]])
+        
+        for (survey_brand in names(brand_mapping)) {
+            design_brand <- brand_mapping[[survey_brand]]
+            
+            if (survey_brand %in% brand_list) {
+                rows_to_update <- which(
+                    design$respondent_id == respondent_id & 
+                    design[[design_brand]] == 1
+                )
+                
+                if (length(rows_to_update) > 0) {
+                    design[rows_to_update, new_col_name] <- 1
+                }
+            }
+        }
+    }
+    return(design)
+}
+
+process_brand_column <- function(data, column_name, defaults) {
+  cat("\nProcessing column:", column_name, "\n")
+  data[[column_name]] <- clean_brand_names(data[[column_name]])
+  all_mentions <- unique(unlist(data[[column_name]]))
+  non_defaults <- setdiff(all_mentions, defaults)
+  
+  if (length(non_defaults) > 0) {
+    cat("Found non-standard brand names in", column_name, ":\n")
+    print(non_defaults)
+    
+    correction_map <- list()
+    
+    for (brand in non_defaults) {
+      cat("\nBrand:", brand, "\n")
+      cat("Options:\n")
+      cat("1. Map to existing brand\n")
+      cat("2. Rename\n")
+      cat("3. Ignore (won't be mapped)\n")
+      
+      choice <- readline(prompt = "Enter choice (1-3): ")
+      
+      if (choice == "1") {
+        cat("Existing brands:\n")
+        print(defaults)
+        mapped <- readline(prompt = "Map to which existing brand? ")
+        if (mapped %in% defaults) {
+          correction_map[[brand]] <- mapped
+          cat("Mapped", brand, "->", mapped, "\n")
+        } else {
+          cat("Invalid brand, skipping\n")
+        }
+      } else if (choice == "2") {
+        new_name <- readline(prompt = "New name: ")
+        correction_map[[brand]] <- new_name
+        defaults <- c(defaults, new_name)
+        cat("Renamed", brand, "->", new_name, "\n")
+      } else {
+        cat("Skipping", brand, "\n")
+      }
+    }
+    
+    if (length(correction_map) > 0) {
+      data[[column_name]] <- lapply(data[[column_name]], function(brands) {
+        sapply(brands, function(b) {
+          ifelse(b %in% names(correction_map), correction_map[[b]], b)
+        })
+      })
+    }
+  }
+  
+  data[[column_name]] <- clean_brand_names(data[[column_name]])
+  return(list(data = data, defaults = defaults))
+}
+
+result_recall <- process_brand_column(survey, "brand.recall", defaults)
+survey <- result_recall$data
+defaults <- result_recall$defaults
+result_recognition <- process_brand_column(survey, "brand.recognition", defaults)
+survey <- result_recognition$data
+defaults <- result_recognition$defaults
+
+design <- add_brand_indicators(design, survey, "past.use")
+design <- add_brand_indicators(design, survey, "brand.recall")
+design <- add_brand_indicators(design, survey, "brand.recognition")
+
+
