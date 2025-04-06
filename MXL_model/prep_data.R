@@ -12,15 +12,26 @@ design <- design %>%
     mutate(choice = 0)
 
 # initial data cleaning
-extract_values_to_array <- function(column) {
+extract_values_to_array <- function(column, output_type = "character") {
     column <- gsub("^\\[|\\]$", "", column)
     column <- gsub('\\"', "", column)
-    strsplit(column, ",")
+    result <- strsplit(column, ",")
+    if (output_type == "numeric") {
+        result <- lapply(result, function(x) {
+            suppressWarnings(as.numeric(x))
+        })
+    } else if (output_type == "character") {
+        result <- lapply(result, trimws)
+    } else {
+        stop("output_type must be either 'character' or 'numeric'")
+    }
+    
+    return(result)
 }
 survey$brand.recall <- extract_values_to_array(survey$brand.recall)
 survey$brand.recognition <- extract_values_to_array(survey$brand.recognition)
-survey$price.guess <- extract_values_to_array(survey$price.guess)
-survey$dce <- extract_values_to_array(survey$dce)
+survey$price.guess <- extract_values_to_array(survey$price.guess, "numeric")
+survey$dce <- extract_values_to_array(survey$dce, "numeric")
 survey$past.use <- extract_values_to_array(survey$past.use)
 
 # match dce to design
@@ -101,13 +112,14 @@ process_brand_column <- function(data, column_name, defaults) {
     print(non_defaults)
     
     correction_map <- list()
+    brands_to_remove <- character()
     
     for (brand in non_defaults) {
       cat("\nBrand:", brand, "\n")
       cat("Options:\n")
       cat("1. Map to existing brand\n")
       cat("2. Rename\n")
-      cat("3. Ignore (won't be mapped)\n")
+      cat("3. Ignore and REMOVE from data\n")
       
       choice <- readline(prompt = "Enter choice (1-3): ")
       
@@ -127,15 +139,20 @@ process_brand_column <- function(data, column_name, defaults) {
         defaults <- c(defaults, new_name)
         cat("Renamed", brand, "->", new_name, "\n")
       } else {
-        cat("Skipping", brand, "\n")
+        brands_to_remove <- c(brands_to_remove, brand)
+        cat("Will remove all occurrences of", brand, "\n")
       }
     }
-    
     if (length(correction_map) > 0) {
       data[[column_name]] <- lapply(data[[column_name]], function(brands) {
         sapply(brands, function(b) {
           ifelse(b %in% names(correction_map), correction_map[[b]], b)
         })
+      })
+    }
+    if (length(brands_to_remove) > 0) {
+      data[[column_name]] <- lapply(data[[column_name]], function(brands) {
+        brands[!brands %in% brands_to_remove]
       })
     }
   }
@@ -155,4 +172,85 @@ design <- add_brand_indicators(design, survey, "past.use")
 design <- add_brand_indicators(design, survey, "brand.recall")
 design <- add_brand_indicators(design, survey, "brand.recognition")
 
+# create market awareness variable
+real_prices = list(
+    22.9,  # WieśMac
+    25.99, # Whopper
+    32.8  # McZestaw McRoyal
+)
 
+calculate_recall_score <- function(brand_list) {
+  num_recalled <- length(brand_list)
+  if (num_recalled >= 10) return(5)
+  else if (num_recalled >= 7) return(4)
+  else if (num_recalled >= 5) return(3)
+  else if (num_recalled >= 3) return(2)
+  else return(1)
+}
+
+calculate_recognition_score <- function(brand_list) {
+  num_recognized <- length(brand_list)
+  if (num_recognized >= 7) return(5)
+  else if (num_recognized >= 5) return(4)
+  else if (num_recognized >= 4) return(3)
+  else if (num_recognized >= 3) return(2)
+  else return(1)
+}
+
+calculate_price_score <- function(price_guesses) {
+  guess <- sum(unlist(price_guesses))
+  real_prices_sum <- sum(unlist(real_prices))
+  total_diff <- abs(guess - real_prices_sum)
+  
+  if (total_diff < 1.5) return(5)
+  else if (total_diff < 3) return(4)
+  else if (total_diff < 9) return(3)
+  else if (total_diff < 15) return(2)
+  else return(1)
+}
+
+survey <- survey %>%
+  mutate(
+    recall_score = sapply(brand.recall, calculate_recall_score),
+    recognition_score = sapply(brand.recognition, calculate_recognition_score),
+    price_score = sapply(price.guess, calculate_price_score),
+    market_awareness = recall_score + recognition_score + price_score
+  )
+
+# create final model dataframe
+design_cols <- c(
+  "respondent_id",
+  "choice",
+  "price",
+  "type_burger_classic", 
+  "type_burger_premium",
+  "type_bundle_classic",
+  "type_bundle_premium",
+  "brand_mcdonalds",
+  "brand_burger_king",
+  "brand_max_burger",
+  "brand_wendys",
+  "no_choice",
+  "past.use_this",
+  "brand.recall_this",
+  "brand.recognition_this"
+)
+
+survey_cols <- c(
+  "respondent_id",
+  "age",
+  "gender",
+  "income",
+  "location",
+  "fast.food.frequency",
+  "education",
+  "market_awareness"
+)
+
+model_data <- design %>%
+  select(all_of(design_cols)) %>%
+  inner_join(
+    survey %>% select(all_of(survey_cols)),
+    by = "respondent_id"
+  )
+str(model_data)
