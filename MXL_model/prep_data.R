@@ -58,7 +58,7 @@ for (i in 1:nrow(survey)) {
 }
 
 # create _this variables
-defaults <- c("mcdonalds", "burger king", "wendys", "max burgers", "popeyes","subway", "kfc", "pizza hut", "taco bell", "dominos", "starbucks", "dunkin donuts", "panda express", "chipotle", "five guys", "panera bread", "chick fil a", "north fish", "shake shack")
+defaults <- c("mcdonalds", "burger king", "wendys", "max burgers", "popeyes","subway", "kfc", "pizza hut", "taco bell", "dominos", "starbucks", "dunkin donuts", "panda express", "chipotle", "five guys", "panera bread", "chick fil a", "north fish", "shake shack", "bobby burger","thai wok", "pasibus", "papa johns", "5 guys", "telepizza", "dominos pizza", "chuck e cheese", "salad story", "in n out", "kebab king", "max premium burgers", "amir kebab", "matsuya", "mos burger", "da grasso", "raising canes", "dairy queen", "jollibee", "sonic", "arbys", "whataburger", "white castle", "little ceaser", "dodo pizza", "zahir kebab", "wing stop", "doner kebab", "hesburger", "o tacos", "pizza dominos", "hooters", "wrap me", "pizza dagrasso", "applebees")
 brand_mapping <- list(
     "mcdonalds" = "brand_mcdonalds",
     "burger king" = "brand_burger_king",
@@ -69,7 +69,7 @@ clean_brand_names <- function(brand_vec) {
   brand_vec <- lapply(brand_vec, tolower)
   brand_vec <- lapply(brand_vec, function(x) {
     x <- gsub("[^[:alnum:] ]", "", x)
-    x <- gsub("\\s+", " ", x)
+    x <- gsub("\\s+", "", x)
     x <- trimws(x)
     return(x)
   })
