@@ -254,3 +254,6 @@ model_data <- design %>%
     by = "respondent_id"
   )
 str(model_data)
+
+# save data
+write.csv(model_data, "data/clean_data.csv", row.names = FALSE)
