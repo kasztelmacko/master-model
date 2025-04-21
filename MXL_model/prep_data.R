@@ -2,7 +2,7 @@ setwd("MXL_model")
 library(dplyr)
 # load data
 design <- read.csv("data/DCE_design.csv")
-survey <- read.csv("data/SurveyResults_rows.csv")
+survey <- read.csv("data/survey_results.csv")
 
 # remove unnecessary columns
 survey <- survey %>%
@@ -58,11 +58,11 @@ for (i in 1:nrow(survey)) {
 }
 
 # create _this variables
-defaults <- c("mcdonalds", "burger king", "wendys", "max burgers", "popeyes","subway", "kfc", "pizza hut", "taco bell", "dominos", "starbucks", "dunkin donuts", "panda express", "chipotle", "five guys", "panera bread", "chick fil a", "north fish", "shake shack", "bobby burger","thai wok", "pasibus", "papa johns", "5 guys", "telepizza", "dominos pizza", "chuck e cheese", "salad story", "in n out", "kebab king", "max premium burgers", "amir kebab", "matsuya", "mos burger", "da grasso", "raising canes", "dairy queen", "jollibee", "sonic", "arbys", "whataburger", "white castle", "little ceaser", "dodo pizza", "zahir kebab", "wing stop", "doner kebab", "hesburger", "o tacos", "pizza dominos", "hooters", "wrap me", "pizza dagrasso", "applebees")
+defaults <- c("mcdonalds", "burgerking", "wendys", "maxburgers", "popeyes","subway", "kfc", "pizzahut", "tacobell", "dominos", "starbucks", "dunkindonuts", "pandaexpress", "chipotle", "fiveguys", "5guys", "panerabread", "chickfila", "northfish", "shakeshack", "bobbyburger","thaiwok", "pasibus", "papajohns", "telepizza", "dominospizza", "chuckecheese", "saladstory", "innout", "kebabking", "maxpremiumburgers", "amirkebab", "matsuya", "mosburger", "dagrasso", "raisingcanes", "dairyqueen", "jollibee", "sonic", "arbys", "whataburger", "whitecastle", "littleceaser", "dodopizza", "zahirkebab", "wingstop", "donerkebab", "hesburger", "otacos", "pizzadominos", "hooters", "wrapme", "pizzadagrasso", "applebees")
 brand_mapping <- list(
     "mcdonalds" = "brand_mcdonalds",
-    "burger king" = "brand_burger_king",
-    "max burgers" = "brand_max_burger",
+    "burgerking" = "brand_burger_king",
+    "maxburgers" = "brand_max_burger",
     "wendys" = "brand_wendys"
 )
 clean_brand_names <- function(brand_vec) {
@@ -113,6 +113,7 @@ process_brand_column <- function(data, column_name, defaults) {
     
     correction_map <- list()
     brands_to_remove <- character()
+    brands_to_split <- list()
     
     for (brand in non_defaults) {
       cat("\nBrand:", brand, "\n")
@@ -120,8 +121,9 @@ process_brand_column <- function(data, column_name, defaults) {
       cat("1. Map to existing brand\n")
       cat("2. Rename\n")
       cat("3. Ignore and REMOVE from data\n")
+      cat("4. Handle as concatenated brands (special case)\n")
       
-      choice <- readline(prompt = "Enter choice (1-3): ")
+      choice <- readline(prompt = "Enter choice (1-4): ")
       
       if (choice == "1") {
         cat("Existing brands:\n")
@@ -138,9 +140,23 @@ process_brand_column <- function(data, column_name, defaults) {
         correction_map[[brand]] <- new_name
         defaults <- c(defaults, new_name)
         cat("Renamed", brand, "->", new_name, "\n")
-      } else {
+      } else if (choice == "3") {
         brands_to_remove <- c(brands_to_remove, brand)
         cat("Will remove all occurrences of", brand, "\n")
+      } else if (choice == "4") {
+        cat("Current concatenated brand:", brand, "\n")
+        selected <- readline(prompt = "Enter the separate brands (comma separated): ")
+        selected_brands <- unlist(strsplit(selected, ",\\s*"))
+        selected_brands <- trimws(tolower(selected_brands))
+        selected_brands <- gsub("[^[:alnum:]]", "", selected_brands)
+        
+        if (length(selected_brands) > 0) {
+          brands_to_split[[brand]] <- selected_brands
+          cat("Will split", brand, "into:", paste(selected_brands, collapse = ", "), "\n")
+        } else {
+          cat("No brands entered, treating as remove\n")
+          brands_to_remove <- c(brands_to_remove, brand)
+        }
       }
     }
     if (length(correction_map) > 0) {
@@ -150,6 +166,20 @@ process_brand_column <- function(data, column_name, defaults) {
         })
       })
     }
+    if (length(brands_to_split) > 0) {
+      data[[column_name]] <- lapply(data[[column_name]], function(brands) {
+        new_brands <- character(0)
+        for (b in brands) {
+          if (b %in% names(brands_to_split)) {
+            new_brands <- c(new_brands, brands_to_split[[b]])
+          } else if (!b %in% brands_to_remove) {
+            new_brands <- c(new_brands, b)
+          }
+        }
+        new_brands
+      })
+    }
+    
     if (length(brands_to_remove) > 0) {
       data[[column_name]] <- lapply(data[[column_name]], function(brands) {
         brands[!brands %in% brands_to_remove]
