@@ -116,3 +116,46 @@ median_market_awareness <- respondent_data %>%
 cat("\nMedian market_awareness for each location:\n")
 print(median_market_awareness)
 
+# plot recall
+generate_plot <- function(data, highlight_brands, brand_column, plot_title) {
+  top_brands <- data %>%
+    arrange(desc(count)) %>%
+    slice_head(n = 8)
+
+  top_brands$color <- ifelse(top_brands[[brand_column]] %in% highlight_brands, top_brands[[brand_column]], "Other")
+  
+  ggplot(top_brands, aes(x = reorder(!!sym(brand_column), count), y = count)) +
+    geom_col(aes(fill = color), color = "black", width = 0.6) +
+    geom_text(aes(label = count), hjust = 1.5, color = "black", size = 5) +
+    coord_flip() +
+    scale_fill_manual(values = c(
+      "mcdonalds" = "lightgrey",
+      "burgerking" = "lightgrey",
+      "maxburgers" = "lightgrey",
+      "wendys" = "lightgrey",
+      "Other" = "white"
+    )) +
+    ggtitle(plot_title) +
+    theme_minimal() +
+    theme(
+      axis.title.y = element_blank(),
+      axis.title.x = element_blank(),
+      axis.ticks.y = element_blank(),
+      axis.ticks.x = element_blank(),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 14),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.background = element_blank(),
+      legend.position = "none"
+    )
+}
+
+highlight_brands <- c("mcdonalds", "burgerking", "maxburgers", "wendys")
+
+plot_recall <- generate_plot(brand_recall_data, highlight_brands, "brand.recall", "Top 8 Recalled Brands")
+plot_recognition <- generate_plot(brand_recognition_data, highlight_brands, "brand.recognition", "Recognized Brands")
+
+ggsave("plots/recall_recognition_plot.png", 
+       grid.arrange(plot_recall, plot_recognition, ncol = 2),
+       width = 8, height = 6)
