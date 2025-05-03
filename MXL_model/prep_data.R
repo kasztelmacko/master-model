@@ -1,5 +1,6 @@
 setwd("MXL_model")
 library(dplyr)
+library(tidyr)
 # load data
 design <- read.csv("data/DCE_design.csv")
 survey <- read.csv("data/survey_results.csv")
@@ -58,7 +59,7 @@ for (i in 1:nrow(survey)) {
 }
 
 # create _this variables
-defaults <- c("mcdonalds", "burgerking", "wendys", "maxburgers", "popeyes","subway", "kfc", "pizzahut", "tacobell", "dominos", "starbucks", "dunkindonuts", "pandaexpress", "chipotle", "fiveguys", "5guys", "panerabread", "chickfila", "northfish", "shakeshack", "bobbyburger","thaiwok", "pasibus", "papajohns", "telepizza", "dominospizza", "chuckecheese", "saladstory", "innout", "kebabking", "maxpremiumburgers", "amirkebab", "matsuya", "mosburger", "dagrasso", "raisingcanes", "dairyqueen", "jollibee", "sonic", "arbys", "whataburger", "whitecastle", "littleceaser", "dodopizza", "zahirkebab", "wingstop", "donerkebab", "hesburger", "otacos", "pizzadominos", "hooters", "wrapme", "pizzadagrasso", "applebees")
+defaults <- c("mcdonalds", "burgerking", "wendys", "maxburgers", "popeyes","subway", "kfc", "pizzahut", "tacobell", "dominos", "dunkindonuts", "pandaexpress", "chipotle", "fiveguys", "5guys", "panerabread", "chickfila", "northfish", "shakeshack", "bobbyburger","thaiwok", "pasibus", "papajohns", "telepizza", "dominospizza", "chuckecheese", "saladstory", "innout", "kebabking", "maxpremiumburgers", "amirkebab", "matsuya", "mosburger", "dagrasso", "raisingcanes", "dairyqueen", "jollibee", "sonic", "arbys", "whataburger", "whitecastle", "littleceaser", "dodopizza", "zahirkebab", "wingstop", "donerkebab", "hesburger", "otacos", "pizzadominos", "hooters", "wrapme", "pizzadagrasso", "applebees", "silverdragon", "loteria", "wkusnoitoczka")
 brand_mapping <- list(
     "mcdonalds" = "brand_mcdonalds",
     "burgerking" = "brand_burger_king",
@@ -198,9 +199,33 @@ result_recognition <- process_brand_column(survey, "brand.recognition", defaults
 survey <- result_recognition$data
 defaults <- result_recognition$defaults
 
+# create brand_recall and brand_recognition csv files
+brand_recall_df <- survey %>%
+  select(brand.recall) %>%
+  unnest(brand.recall) %>%
+  group_by(brand.recall) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  arrange(desc(count))
+
+write.csv(brand_recall_df, "data/brand_recall.csv", row.names = FALSE)
+
+brand_recognition_df <- survey %>%
+  select(brand.recognition) %>%
+  unnest(brand.recognition) %>%
+  group_by(brand.recognition) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  arrange(desc(count))
+
+write.csv(brand_recognition_df, "data/brand_recognition.csv", row.names = FALSE)
+
 design <- add_brand_indicators(design, survey, "past.use")
 design <- add_brand_indicators(design, survey, "brand.recall")
 design <- add_brand_indicators(design, survey, "brand.recognition")
+design <- design %>%
+    mutate(
+      is_well_known = ifelse(brand_mcdonalds == 1 | brand_burger_king == 1, 1,
+                        ifelse(brand_max_burger == 1 | brand_wendys == 1, 0, NA))
+    )
 
 # create market awareness variable
 real_prices = list(
@@ -250,6 +275,7 @@ survey <- survey %>%
 # create final model dataframe
 design_cols <- c(
   "respondent_id",
+  "question_id",
   "choice",
   "price",
   "type_burger_classic", 
@@ -260,6 +286,7 @@ design_cols <- c(
   "brand_burger_king",
   "brand_max_burger",
   "brand_wendys",
+  "is_well_known",
   "no_choice",
   "past.use_this",
   "brand.recall_this",

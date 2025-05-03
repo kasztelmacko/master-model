@@ -4,6 +4,8 @@ library(ggplot2)
 library(gridExtra)
 
 data <- read.csv("data/clean_data.csv")
+brand_recall_data <- read.csv("data/brand_recall.csv")
+brand_recognition_data <- read.csv("data/brand_recognition.csv")
 
 # filter out no_choice
 excluded_ids <- data %>%
@@ -20,18 +22,23 @@ original_count <- data %>%
   distinct(respondent_id) %>%
   nrow()
 
-filtered_count <- filtered_data %>%
-  distinct(respondent_id) %>%
-  nrow()
 
 cat("Original number of respondent_id:", original_count, "\n")
-cat("Number of respondent_id in filtered_data:", filtered_count, "\n")
 
 # filter out age > 35
 filtered_data <- filtered_data %>%
   filter(age <= 35)
 
+# filter small inne gender group (4 records)
+filtered_data <- filtered_data %>%
+  filter(gender != "inne")
+
+filtered_count <- filtered_data %>%
+  distinct(respondent_id) %>%
+  nrow()
+
 cat("Number of respondent_id in filtered_data:", filtered_count, "\n")
+write.csv(filtered_data, "data/filtered_data.csv", row.names = FALSE)
 
 # create survey calls
 survey_cols <- c(
@@ -108,3 +115,4 @@ median_market_awareness <- respondent_data %>%
 
 cat("\nMedian market_awareness for each location:\n")
 print(median_market_awareness)
+
