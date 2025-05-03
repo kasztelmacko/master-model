@@ -224,7 +224,7 @@ design <- add_brand_indicators(design, survey, "brand.recognition")
 design <- design %>%
     mutate(
       is_well_known = ifelse(brand_mcdonalds == 1 | brand_burger_king == 1, 1,
-                        ifelse(brand_max_burger == 1 | brand_wendys == 1, 0, NA))
+                        ifelse(brand_max_burger == 1 | brand_wendys == 1, 0, 0))
     )
 
 # create market awareness variable
