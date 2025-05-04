@@ -26,6 +26,7 @@ data <- data %>%
     ),
     city_under_500k = ifelse(location_grouped == "city_under_500k", 1, 0),
     city_over_500k = ifelse(location_grouped == "city_over_500k", 1, 0),
+    # rural = ifelse(location_grouped == "rural", 1, 0),
 
     # Gender dummies
     is_female = ifelse(gender == "kobieta", 1, 0),
@@ -263,7 +264,7 @@ mxl_model_formula_price_random <- choice ~
   price + 
   no_choice + 
   brand.recall_this + brand.recognition_this + brand.past_use_this + 
-  price:income_low + price:income_high + price:market_awareness_norm + price:eats_fastfood_rarely + price:is_female + price:age_norm + price:city_under_500k + price:city_over_500k +
+  price:income_low + price:income_high + price:market_awareness_norm + price:eats_fastfood_rarely + price:is_female + price:city_under_500k + price:city_over_500k +
   price:brand.recall_this + price:brand.recognition_this + price:brand.past_use_this | #alternative_variables
   0 | #individual_specific_variables
   0   #variables_for_random_means
@@ -285,3 +286,35 @@ mxl_model_price_random <- gmnl(
 )
 
 summary(mxl_model_price_random)
+wtp.gmnl(mxl_model_price_random, wrt = "price")
+
+# ############################################################################
+# MXL with price fixed
+# ############################################################################
+mxl_model_formula_price_fixed <- choice ~
+  price + 
+  no_choice + 
+  is_well_known +
+  brand.recall_this + brand.recognition_this + brand.past_use_this + 
+  price:is_well_known | #alternative_variables
+  0 | #individual_specific_variables
+  0   #variables_for_random_means
+
+ranp <- c(
+  is_well_known = "n"
+)
+
+mxl_model_price_fixed <- gmnl(
+  formula = mxl_model_formula_price_fixed,
+  data = data_mlogit_full,
+  model = "mixl",
+  panel = TRUE,
+  ranp = ranp,
+  R = 500,
+  print.level = 2,
+  halton = NA,
+  correlation = FALSE
+)
+
+summary(mxl_model_price_fixed)
+wtp.gmnl(mxl_model_price_fixed, wrt = "price")
