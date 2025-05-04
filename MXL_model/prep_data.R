@@ -266,6 +266,14 @@ calculate_price_score <- function(price_guesses) {
 
 survey <- survey %>%
   mutate(
+    total_recalled = sapply(brand.recall, function(x) length(x)),
+    total_recognized = sapply(brand.recognition, function(x) length(x)),
+    total_price_guess_diff = sapply(price.guess, function(x) {
+      guess <- sum(unlist(x))
+      real <- sum(unlist(real_prices))
+      abs(guess - real)
+    }),
+    
     recall_score = sapply(brand.recall, calculate_recall_score),
     recognition_score = sapply(brand.recognition, calculate_recognition_score),
     price_score = sapply(price.guess, calculate_price_score),
@@ -288,7 +296,7 @@ design_cols <- c(
   "brand_wendys",
   "is_well_known",
   "no_choice",
-  "past.use_this",
+  "brand.past_use_this",
   "brand.recall_this",
   "brand.recognition_this"
 )
