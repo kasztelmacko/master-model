@@ -59,7 +59,7 @@ respondent_data <- filtered_data %>%
 
 # plot age distribution
 hist_plot <- ggplot(respondent_data, aes(x = age)) +
-  geom_histogram(binwidth = 2, fill = "white", color = "black") +
+  geom_histogram(binwidth = 3, fill = "white", color = "black") +
   theme_minimal() +
   theme(
     axis.title.x = element_blank(),

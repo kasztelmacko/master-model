@@ -189,6 +189,7 @@ process_brand_column <- function(data, column_name, defaults) {
   }
   
   data[[column_name]] <- clean_brand_names(data[[column_name]])
+  data[[column_name]] <- lapply(data[[column_name]], unique)
   return(list(data = data, defaults = defaults))
 }
 
@@ -296,7 +297,7 @@ design_cols <- c(
   "brand_wendys",
   "is_well_known",
   "no_choice",
-  "brand.past_use_this",
+  "past.use_this",
   "brand.recall_this",
   "brand.recognition_this"
 )
@@ -309,7 +310,10 @@ survey_cols <- c(
   "location",
   "fast.food.frequency",
   "education",
-  "market_awareness"
+  "market_awareness",
+  "total_recalled",
+  "total_recognized",
+  "total_price_guess_diff"
 )
 
 model_data <- design %>%

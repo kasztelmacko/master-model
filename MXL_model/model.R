@@ -263,7 +263,7 @@ mxl_model_formula_price_random <- choice ~
   price + 
   no_choice + 
   brand.recall_this + brand.recognition_this + brand.past_use_this + 
-  price:income_low + price:income_high + price:market_awareness + price:eats_fastfood_rarely + price:is_female +
+  price:income_low + price:income_high + price:market_awareness_norm + price:eats_fastfood_rarely + price:is_female + price:age_norm + price:city_under_500k + price:city_over_500k +
   price:brand.recall_this + price:brand.recognition_this + price:brand.past_use_this | #alternative_variables
   0 | #individual_specific_variables
   0   #variables_for_random_means
