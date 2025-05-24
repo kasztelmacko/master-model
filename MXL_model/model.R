@@ -55,7 +55,7 @@ data <- data %>%
 
 ## 2. TESTS ---------------------------------------------------------
 data <- as.data.frame(data)
-car::vif(lm(price ~ brand.recall_this + brand.recognition_this + brand.past_use_this + 
+car::vif(lm(price ~ brand.recall_this + brand.recognition_this + past.use_this + 
              income_low + income_high + age + market_awareness + 
              is_well_known + city_under_500k + city_over_500k, data = data))
 # VIF < 5, no multicollinearity
