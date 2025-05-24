@@ -3,8 +3,8 @@
 "kfc",182
 "burgerking",163
 "subway",97
+"maxburgers",67
 "popeyes",59
-"maxburgers",57
 "wendys",57
 "pizzahut",54
 "tacobell",53
@@ -12,17 +12,16 @@
 "kebabking",24
 "fiveguys",19
 "pasibus",19
-"dunkindonuts",17
 "chipotle",16
 "dominos",16
 "innout",16
+"dunkindonuts",14
 "saladstory",14
-"dominospizza",12
+"dominospizza",13
 "thaiwok",12
-"maxpremiumburgers",8
 "pandaexpress",8
-"papajohns",8
 "bobbyburger",7
+"papajohns",7
 "chickfila",6
 "dagrasso",6
 "jollibee",6
@@ -41,7 +40,6 @@
 "zahirkebab",3
 "littleceaser",2
 "mosburger",2
-"pizzadominos",2
 "sonic",2
 "whataburger",2
 "applebees",1
@@ -50,6 +48,8 @@
 "hooters",1
 "matsuya",1
 "otacos",1
+"papajohnes",1
+"pizzadominos",1
 "wingstop",1
 "wkusnoitoczka",1
 "wrapme",1

@@ -59,7 +59,7 @@ for (i in 1:nrow(survey)) {
 }
 
 # create _this variables
-defaults <- c("mcdonalds", "burgerking", "wendys", "maxburgers", "popeyes","subway", "kfc", "pizzahut", "tacobell", "dominos", "dunkindonuts", "pandaexpress", "chipotle", "fiveguys", "5guys", "panerabread", "chickfila", "northfish", "shakeshack", "bobbyburger","thaiwok", "pasibus", "papajohns", "telepizza", "dominospizza", "chuckecheese", "saladstory", "innout", "kebabking", "maxpremiumburgers", "amirkebab", "matsuya", "mosburger", "dagrasso", "raisingcanes", "dairyqueen", "jollibee", "sonic", "arbys", "whataburger", "whitecastle", "littleceaser", "dodopizza", "zahirkebab", "wingstop", "donerkebab", "hesburger", "otacos", "pizzadominos", "hooters", "wrapme", "pizzadagrasso", "applebees", "silverdragon", "loteria", "wkusnoitoczka")
+defaults <- c("mcdonalds", "burgerking", "wendys", "maxburgers", "popeyes","subway", "kfc", "pizzahut", "tacobell", "dominos", "dunkindonuts", "pandaexpress", "chipotle", "fiveguys", "5guys", "panerabread", "chickfila", "northfish", "shakeshack", "bobbyburger","thaiwok", "pasibus", "papajohns", "telepizza", "dominospizza", "chuckecheese", "saladstory", "innout", "kebabking", "amirkebab", "matsuya", "mosburger", "dagrasso", "raisingcanes", "dairyqueen", "jollibee", "sonic", "arbys", "whataburger", "whitecastle", "littleceaser", "dodopizza", "zahirkebab", "wingstop", "donerkebab", "hesburger", "otacos", "pizzadominos", "hooters", "wrapme", "pizzadagrasso", "applebees", "silverdragon", "loteria", "wkusnoitoczka")
 brand_mapping <- list(
     "mcdonalds" = "brand_mcdonalds",
     "burgerking" = "brand_burger_king",
@@ -193,9 +193,43 @@ process_brand_column <- function(data, column_name, defaults) {
   return(list(data = data, defaults = defaults))
 }
 
+add_brand_recall_score <- function(design, survey) {
+  recall_map <- setNames(survey$brand.recall, survey$respondent)
+  design$brand.recall_score <- 0
+
+  for (i in seq_len(nrow(design))) {
+    respondent_id <- design$respondent_id[i]
+    recalled_brands <- recall_map[[as.character(respondent_id)]]
+
+    if (is.null(recalled_brands) || length(recalled_brands) == 0 || all(is.na(recalled_brands))) {
+      next
+    }
+
+    for (brand_name in names(brand_mapping)) {
+      col_name <- brand_mapping[[brand_name]]
+
+      if (!col_name %in% names(design) || is.na(design[[col_name]][i]) || design[[col_name]][i] != 1) {
+        next
+      }
+      position <- match(brand_name, recalled_brands)
+      if (!is.na(position)) {
+        score <- if (position <= 3) 5 else if (position <= 6) 3 else 2
+      } else {
+        score <- 0
+      }
+
+      design$brand.recall_score[i] <- design$brand.recall_score[i] + score
+    }
+  }
+
+  return(design)
+}
+
+
 result_recall <- process_brand_column(survey, "brand.recall", defaults)
 survey <- result_recall$data
 defaults <- result_recall$defaults
+
 result_recognition <- process_brand_column(survey, "brand.recognition", defaults)
 survey <- result_recognition$data
 defaults <- result_recognition$defaults
@@ -222,11 +256,20 @@ write.csv(brand_recognition_df, "data/brand_recognition.csv", row.names = FALSE)
 design <- add_brand_indicators(design, survey, "past.use")
 design <- add_brand_indicators(design, survey, "brand.recall")
 design <- add_brand_indicators(design, survey, "brand.recognition")
+design <- add_brand_recall_score(design, survey)
 design <- design %>%
     mutate(
       is_well_known = ifelse(brand_mcdonalds == 1 | brand_burger_king == 1, 1,
                         ifelse(brand_max_burger == 1 | brand_wendys == 1, 0, 0))
     )
+
+brand_lists_cleaned <- survey %>%
+  select(respondent_id, brand.recall, brand.recognition) %>%
+  mutate(
+    brand.recall = sapply(brand.recall, function(x) paste(x, collapse = "; ")),
+    brand.recognition = sapply(brand.recognition, function(x) paste(x, collapse = "; "))
+  )
+write.csv(brand_lists_cleaned, "data/brand_lists_cleaned.csv", row.names = FALSE)
 
 # create market awareness variable
 real_prices = list(
@@ -299,7 +342,8 @@ design_cols <- c(
   "no_choice",
   "past.use_this",
   "brand.recall_this",
-  "brand.recognition_this"
+  "brand.recognition_this",
+  "brand.recall_score"
 )
 
 survey_cols <- c(
