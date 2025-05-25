@@ -1,4 +1,5 @@
 setwd("MXL_model")
+install.packages("https://cran.r-project.org/src/contrib/Archive/mlogit/mlogit_1.0-2.tar.gz", repos=NULL,type="source")
 library(dplyr)
 library(mlogit)
 library(car)
@@ -15,21 +16,6 @@ data <- data %>%
     respondent_question_id = paste(respondent_id, question_id, sep = "_")
   ) %>%
   ungroup()
-
-data <- data %>%
-  mutate(
-    known_factor = case_when(
-      brand_mcdonalds == 1 ~ "well_known",
-      brand_burger_king == 1 ~ "well_known",
-      brand_max_burger == 1 ~ "somewhat_known",
-      brand_wendys == 1 ~ "rarely_known",
-      no_choice == 1 ~ "no_choice", 
-      TRUE ~ NA_character_
-    ),
-    brand.well_known = ifelse(known_factor == "well_known", 1, 0),
-    brand.somewhat_known = ifelse(known_factor == "somewhat_known", 1, 0),
-    brand.rarely_known = ifelse(known_factor == "rarely_known", 1, 0)
-  )
 
 # bin and dummy
 data <- data %>%
@@ -49,8 +35,7 @@ data <- data %>%
     # is_male = ifelse(gender == "mezczyzna", 1, 0),
 
     # Education dummies
-    # is_higher_edu = ifelse(education == "wyzsze", 1, 0),
-    # is_studying = ifelse(education == "w-trakcie-studiow", 1, 0),
+    is_graduated = ifelse(education == "wyzsze", 1, 0),
 
     # Income dummies
     income_low = ifelse(income %in% c("ponizej-1000", "1000-2500"), 1, 0),
@@ -68,6 +53,12 @@ data <- data %>%
     -income,
     -fast.food.frequency
   )
+
+data <- data %>%
+    mutate(
+      is_bundle = ifelse(type_bundle_classic == 1 | type_bundle_premium == 1, 1,
+                        ifelse(type_burger_classic == 1 | type_burger_premium == 1, 0, 0))
+    )
 
 data <- data %>%
   mutate(
@@ -94,9 +85,6 @@ data <- data %>%
     price_is_well_known = price * is_well_known,
     price_age = price * age,
     price_total_price_guess_diff_log = price * log_total_price_guess_diff,
-    price_brand_well_known = price * brand.well_known,
-    price_brand_somewhat_known = price * brand.somewhat_known,
-    price_brand_rarely_known = price * brand.rarely_known,
 
     price_log_income_high = log_price * income_high,
     price_log_income_low = log_price * income_low,
@@ -159,3 +147,76 @@ wtp_model <- gmnl(
 
 summary(wtp_model)
 
+## mixed logit model in wtp space
+mixl_model <- gmnl(
+    formula <- choice ~ 
+      is_well_known + is_bundle +
+      brand.recall_this + brand.recognition_this + past.use_this +
+      price:log_age +
+      price:log_market_awareness +
+      log_price:income_high + log_price:income_low +
+      log_price:is_female + 
+      log_price:eats_fastfood_rarely +
+      log_price:is_graduated +
+      log_price:city_over_500k + log_price:city_under_500k |
+      0 |
+      0 |
+      0,
+    data = mlogit_data,
+    model = "mixl",
+    ranp = c(
+              is_well_known = "n",
+              is_bundle = "n"
+            ),
+    modelType = "wtp",
+    base = "price",
+    R=1000
+)
+
+summary(mixl_model)
+
+## Compare
+model_linear <- gmnl(
+    choice ~ is_well_known + is_bundle + brand.recall_this + brand.recognition_this + past.use_this +
+             price:age + price:is_female + price:eats_fastfood_rarely + 
+             price:income_high + price:income_low + price:is_graduated + 
+             price:market_awareness + price:city_over_500k + price:city_under_500k |
+    0 | 0 | 0,
+    data = mlogit_data, model = "mixl", ranp = c(is_well_known = "n", is_bundle = "n"),
+    modelType = "wtp", base = "price", R = 1000
+)
+
+model_log <- gmnl(
+    choice ~ is_well_known + is_bundle + brand.recall_this + brand.recognition_this + past.use_this +
+             log_price:age + log_price:is_female + log_price:eats_fastfood_rarely + 
+             log_price:income_high + log_price:income_low + log_price:is_graduated + 
+             log_price:market_awareness + log_price:city_over_500k + log_price:city_under_500k |
+    0 | 0 | 0,
+    data = mlogit_data, model = "mixl", ranp = c(is_well_known = "n", is_bundle = "n"),
+    modelType = "wtp", base = "price", R = 1000
+)
+
+AIC(model_linear)
+AIC(model_log)
+BIC(model_linear) 
+BIC(model_log)
+
+summary(model_log)
+
+## Latent class model with fixed effects
+lc_model <- gmnl(
+  formula = choice ~
+    brand.recall_score +
+    past.use_this + is_well_known + no_choice +
+    price |
+    0 |
+    0 |
+    0 |
+    is_female + city_over_500k + city_under_500k,
+  data = mlogit_data,
+  model = "lc",
+  panel = TRUE,
+  Q = 2
+)
+
+summary(lc_model)
