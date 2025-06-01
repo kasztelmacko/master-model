@@ -52,6 +52,13 @@ data <- data %>%
     -fast.food.frequency
   )
 
+data <- data %>%
+  mutate(
+    is_bundle = ifelse(type_bundle_classic == 1 | type_bundle_premium == 1, 1, 0),
+    is_premium = ifelse(type_burger_premium == 1 | type_bundle_premium == 1, 1, 0)
+  )
+
+
 ################################################################################
 clustering_data <- data %>%
   distinct(respondent_id, .keep_all = TRUE) %>%
@@ -174,7 +181,7 @@ summary(wtp.gmnl(experiment_model_fixed_clusters_util, wrt = "price"))
 
 ## FIXED EFFECTS ONLY CLUSTERS UTIL WTP SPACE
 experiment_model_fixed_clusters_wtp <- gmnl(
-    choice ~ brand.recall_this + brand.recognition_this + past.use_this +
+    choice ~ brand.recall_score + brand.recognition_this + past.use_this +
             is_well_known +
             market_awareness:price + is_female:price +
             cluster_2:price + cluster_3:price +
@@ -189,6 +196,23 @@ experiment_model_fixed_clusters_wtp <- gmnl(
     R = 2000
 )
 summary(experiment_model_fixed_clusters_wtp)
+
+experiment_model_fixed_clusters_wtp_is_bundle <- gmnl(
+    choice ~ brand.recall_score + brand.recognition_this + past.use_this +
+            is_well_known + is_bundle + is_premium +
+            market_awareness:price + is_female:price +
+            cluster_2:price + cluster_3:price +
+            no_choice |
+            0 |
+            0 |
+            0,
+    data = mlogit_data,
+    model = "mnl",
+    modelType = "wtp",
+    base = "price",
+    R = 2000
+)
+summary(experiment_model_fixed_clusters_wtp_is_bundle)
 
 ## FIXED EFFECTS IN WTP SPACE, WELL-KNOWN PRICE INTERACTION
 experiment_model_fixed_clusters_well_known_interact_wtp <- gmnl(
@@ -272,7 +296,7 @@ summary(wtp.gmnl(experiment_model_cluster_util, wrt = "price"))
 ## CLUSTERS INSTEAD OF CONSUMER CHARACTERISTICS WTP SPACE
 experiment_model_cluster_wtp <- gmnl(
   choice ~ brand.recall_this + brand.recognition_this + past.use_this +
-           is_well_known +
+           is_well_known + is_bundle +
            market_awareness:price + is_female:price +
            cluster_2:price + cluster_3:price +
            no_choice |
@@ -283,9 +307,15 @@ experiment_model_cluster_wtp <- gmnl(
   model = "mixl",
   modelType = "wtp",
   base = "price",
-  ranp = c(is_well_known = "n"),
+  ranp = c(
+    is_well_known = "n", 
+    is_bundle= "n",
+    brand.recall_this = "n",
+    brand.recognition_this = "n",
+    past.use_this = "n"
+    ),
   R = 2000
 )
 summary(experiment_model_cluster_wtp)
 
-
+# sprawdz jak wyglądają wyniki gdy estymujemy dla każdego klastra osobno
