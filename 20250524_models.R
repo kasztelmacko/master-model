@@ -5,6 +5,7 @@ library(mlogit)
 library(car)
 library(gmnl)
 library(ggplot2)
+library(logitr)
 
 ## 1. DATA PREPARATION --------------------------------------------------------
 data <- read.csv("data/filtered_data.csv")
@@ -55,10 +56,24 @@ data <- data %>%
   )
 
 data <- data %>%
-    mutate(
-      is_bundle = ifelse(type_bundle_classic == 1 | type_bundle_premium == 1, 1,
-                        ifelse(type_burger_classic == 1 | type_burger_premium == 1, 0, 0))
+  mutate(
+    is_bundle = ifelse(type_bundle_classic == 1 | type_bundle_premium == 1, 1,
+            ifelse(type_burger_classic == 1 | type_burger_premium == 1, 0, 0)),
+    brand = case_when(
+      brand_mcdonalds == 1 ~ "mcdonalds",
+      brand_burger_king == 1 ~ "burgerking",
+      brand_wendys == 1 ~ "wendys",
+      brand_max_burger == 1 ~ "maxburger",
+      TRUE ~ "no_choice"
+    ),
+    type = case_when(
+      type_bundle_classic == 1 ~ "bundle_classic",
+      type_bundle_premium == 1 ~ "bundle_premium",
+      type_burger_classic == 1 ~ "burger_classic",
+      type_burger_premium == 1 ~ "burger_premium",
+      TRUE ~ "no_choice"
     )
+  )
 
 data <- data %>%
   mutate(
@@ -150,23 +165,16 @@ summary(wtp_model)
 ## mixed logit model in wtp space
 mixl_model <- gmnl(
     formula <- choice ~ 
-      is_well_known + is_bundle +
-      brand.recall_this + brand.recognition_this + past.use_this +
-      price:log_age +
-      price:log_market_awareness +
-      log_price:income_high + log_price:income_low +
-      log_price:is_female + 
-      log_price:eats_fastfood_rarely +
-      log_price:is_graduated +
-      log_price:city_over_500k + log_price:city_under_500k |
+      brand + type +
+      brand.recall_this + brand.recognition_this + past.use_this |
       0 |
       0 |
       0,
     data = mlogit_data,
     model = "mixl",
     ranp = c(
-              is_well_known = "n",
-              is_bundle = "n"
+              brand = "n",
+              type = "n"
             ),
     modelType = "wtp",
     base = "price",
@@ -175,33 +183,7 @@ mixl_model <- gmnl(
 
 summary(mixl_model)
 
-## Compare
-model_linear <- gmnl(
-    choice ~ is_well_known + is_bundle + brand.recall_this + brand.recognition_this + past.use_this +
-             price:age + price:is_female + price:eats_fastfood_rarely + 
-             price:income_high + price:income_low + price:is_graduated + 
-             price:market_awareness + price:city_over_500k + price:city_under_500k |
-    0 | 0 | 0,
-    data = mlogit_data, model = "mixl", ranp = c(is_well_known = "n", is_bundle = "n"),
-    modelType = "wtp", base = "price", R = 1000
-)
 
-model_log <- gmnl(
-    choice ~ is_well_known + is_bundle + brand.recall_this + brand.recognition_this + past.use_this +
-             log_price:age + log_price:is_female + log_price:eats_fastfood_rarely + 
-             log_price:income_high + log_price:income_low + log_price:is_graduated + 
-             log_price:market_awareness + log_price:city_over_500k + log_price:city_under_500k |
-    0 | 0 | 0,
-    data = mlogit_data, model = "mixl", ranp = c(is_well_known = "n", is_bundle = "n"),
-    modelType = "wtp", base = "price", R = 1000
-)
-
-AIC(model_linear)
-AIC(model_log)
-BIC(model_linear) 
-BIC(model_log)
-
-summary(model_log)
 
 ## Latent class model with fixed effects
 lc_model <- gmnl(
@@ -220,3 +202,29 @@ lc_model <- gmnl(
 )
 
 summary(lc_model)
+
+# logitr
+data$obsID <- as.integer(factor(data$respondent_question_id))
+
+mixl_model <- logitr(
+  data = data,
+  outcome = "choice",
+  obsID = "obsID",
+  panelID = "respondent_id",
+  pars = c(
+    "is_well_known", 
+    "is_bundle", 
+    "brand.recall_score", 
+    "brand.recognition_this", 
+    "past.use_this",
+    "price_is_female"
+    ),
+  scalePar = "price",
+  randPars = c(
+    is_well_known = "n",
+    is_bundle = "n"
+  ),
+  numMultiStarts = 10
+)
+
+summary(mixl_model)
