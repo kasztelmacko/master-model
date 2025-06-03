@@ -66,8 +66,7 @@ clustering_data <- data %>%
             eats_fastfood_rarely, eats_fastfood_weekly, 
             income_high, income_mid, income_low,
             is_graduated, 
-            city_over_500k, city_under_500k, rural,
-            age
+            city_over_500k, city_under_500k, rural, age
             )
 clustering_matrix <- as.matrix(clustering_data %>% select(-respondent_id))
 sil_widths <- vector()
@@ -108,9 +107,9 @@ print(cluster_summary, n = Inf, width = Inf)
 data <- data %>%
   left_join(clustering_data %>% select(respondent_id, cluster), by = "respondent_id") %>%
   mutate(
-    cluster = factor(cluster),
-    cluster_2 = ifelse(cluster == 2, 1, 0),
-    cluster_3 = ifelse(cluster == 3, 1, 0)
+    educated_older_urbans = factor(cluster),
+    young_rare_fast_food_eaters = ifelse(cluster == 2, 1, 0),
+    urban_frequent_eaters = ifelse(cluster == 3, 1, 0)
   )
 
 mlogit_data <- mlogit.data(
@@ -296,10 +295,11 @@ summary(wtp.gmnl(experiment_model_cluster_util, wrt = "price"))
 ## CLUSTERS INSTEAD OF CONSUMER CHARACTERISTICS WTP SPACE
 experiment_model_cluster_wtp <- gmnl(
   choice ~ brand.recall_this + brand.recognition_this + past.use_this +
-           is_well_known + is_bundle +
+           is_well_known + is_bundle + is_premium +
            market_awareness:price + is_female:price +
            cluster_2:price + cluster_3:price +
            no_choice |
+           0 |
            0 |
            0 |
            0,
@@ -309,13 +309,39 @@ experiment_model_cluster_wtp <- gmnl(
   base = "price",
   ranp = c(
     is_well_known = "n", 
-    is_bundle= "n",
-    brand.recall_this = "n",
-    brand.recognition_this = "n",
-    past.use_this = "n"
+    is_premium = "n",
+    brand.recognition_this = "n"
     ),
   R = 2000
 )
 summary(experiment_model_cluster_wtp)
 
-# sprawdz jak wyglądają wyniki gdy estymujemy dla każdego klastra osobno
+## check random parameters significance
+model_fixed <- gmnl(
+  choice ~ brand.recall_this + brand.recognition_this + past.use_this +
+           is_well_known + is_bundle + is_premium +
+           market_awareness:price + is_female:price +
+           cluster_2:price + cluster_3:price +
+           no_choice |
+           0 | 0 | 0 | 0,
+  data = mlogit_data,
+  model = "mixl",
+  modelType = "wtp",
+  base = "price",
+  ranp = c(
+    is_well_known = "n",
+    brand.recognition_this = "n"
+  ),
+  R = 2000
+)
+
+logLik(model_fixed)
+logLik(experiment_model_cluster_wtp)
+
+AIC(model_fixed)
+AIC(experiment_model_cluster_wtp)
+
+BIC(model_fixed)
+BIC(experiment_model_cluster_wtp)
+
+lrtest(experiment_model_cluster_wtp, model_fixed)
