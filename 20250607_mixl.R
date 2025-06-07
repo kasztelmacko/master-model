@@ -199,30 +199,3 @@ experiment_model_cluster_wtp_interact <- gmnl(
   R = 2000
 )
 summary(experiment_model_cluster_wtp_interact)
-
-##############################################################
-# LCM experiment
-experiment_model_LCM_wtp <- gmnl(
-  choice ~ brand.recall_this + brand.recognition_this + past.use_this +
-      is_well_known + is_bundle + is_premium +
-      no_choice |
-      0 |
-      0 |
-      0 |
-      1 +
-      age + 
-      is_female +
-      income_high +
-      income_low +
-      city_under_500k +
-      rural +
-      market_awareness +
-      eats_fastfood_rarely,
-  data = mlogit_data,
-  model = "lc",
-  modelType = "wtp",
-  base = "price",
-  R = 2000,
-  Q = 3
-)
-summary(experiment_model_LCM_wtp)
