@@ -58,16 +58,6 @@ data <- data %>%
     is_premium = ifelse(type_burger_premium == 1 | type_bundle_premium == 1, 1, 0)
   )
 
-data <- data %>%
-  mutate(
-    market_awareness_log = log(market_awareness + 0.001),
-    age_log = log(age + 0.001),
-    price_log = log(price + 0.001),
-    market_awareness_exp = I(market_awareness^2),
-    age_exp = exp(age),
-    market_awareness_sqrt = sqrt(market_awareness),
-    age_sqrt = sqrt(age)
-  )
 
 ################################################################################
 clustering_data <- data %>%
@@ -76,24 +66,61 @@ clustering_data <- data %>%
             eats_fastfood_rarely, eats_fastfood_weekly, 
             income_high, income_mid, income_low,
             is_graduated, 
-            city_over_500k, city_under_500k, rural, age
+            city_over_500k, city_under_500k, rural,
+            age
             )
 clustering_matrix <- as.matrix(clustering_data %>% select(-respondent_id))
 sil_widths <- vector()
+for (k in 2:10) {
+  km <- kmeans(clustering_matrix, centers = k, nstart = 25)
+  ss <- silhouette(km$cluster, dist(clustering_matrix))
+  sil_widths[k] <- mean(ss[, 3])
+}
+
+plot(2:10, sil_widths[2:10], type = "b", pch = 19,
+     xlab = "Number of clusters", ylab = "Average silhouette width",
+     main = "Silhouette Method")
 
 set.seed(123)
 k <- 3
 kmeans_result <- kmeans(clustering_matrix, centers = k, nstart = 25)
 clustering_data$cluster <- factor(kmeans_result$cluster)
 
+cluster_summary <- clustering_data %>%
+  group_by(cluster) %>%
+  summarise(
+    n = n(),
+    age_mean = mean(age, na.rm = TRUE),
+    across(
+      c(eats_fastfood_rarely, eats_fastfood_weekly, 
+        income_high, income_mid, income_low,
+        is_graduated, city_over_500k, city_under_500k, rural),
+      list(count = ~sum(.)),
+      .names = "{.col}_{.fn}"
+    )
+  )
+
+print(cluster_summary, n = Inf, width = Inf)
+# cluster 1: educated older urbans
+# cluster 2: young rare fast food eaters
+# cluster 3: urban frequent eaters
+
 data <- data %>%
   left_join(clustering_data %>% select(respondent_id, cluster), by = "respondent_id") %>%
   mutate(
-    educated_older_urbans = factor(cluster),
-    young_rare_fast_food_eaters = ifelse(cluster == 2, 1, 0),
-    urban_frequent_eaters = ifelse(cluster == 3, 1, 0)
+    cluster = factor(cluster),
+    cluster_2 = ifelse(cluster == 2, 1, 0),
+    cluster_3 = ifelse(cluster == 3, 1, 0)
   )
 
+data %>%
+  group_by(cluster) %>%
+  summarise(
+    count = n(),
+    mean_awareness = mean(market_awareness, na.rm = TRUE),
+    sd_awareness = sd(market_awareness, na.rm = TRUE),
+    median_awareness = median(market_awareness, na.rm = TRUE)
+  )
 
 mlogit_data <- mlogit.data(
   data,
@@ -104,59 +131,51 @@ mlogit_data <- mlogit.data(
   id.var = "respondent_id"
 )
 
-##########################################################################
-##############################################################
-# LCM experiment
-experiment_model_LCM_wtp <- gmnl(
+experiment_model_cluster_wtp <- gmnl(
   choice ~ brand.recall_this + brand.recognition_this + past.use_this +
-      is_well_known + is_bundle + is_premium +
-      no_choice |
-      0 |
-      0 |
-      0 |
-      1 +
-      # young_rare_fast_food_eaters +
-      # urban_frequent_eaters +
-      age_log +
-      is_female +
-      income_high +
-      income_low +
-      is_graduated +
-      city_under_500k +
-      rural +
-      market_awareness_log +
-      eats_fastfood_weekly,
+           is_well_known + is_bundle +
+           market_awareness:price + is_female:price +
+           cluster_2:price + cluster_3:price +
+           cluster_2:is_well_known + cluster_3:is_well_known +
+           cluster_2:is_bundle + cluster_3:is_bundle +
+           no_choice |
+           0 |
+           0 |
+           0,
   data = mlogit_data,
-  model = "lc",
+  model = "mixl",
   modelType = "wtp",
   base = "price",
-  R = 2000,
-  Q = 3
+  ranp = c(
+    is_well_known = "n", 
+    is_bundle = "n",
+    brand.recall_this = "n",
+    brand.recognition_this = "n",
+    past.use_this = "n"
+  ),
+  R = 2000
 )
-summary(experiment_model_LCM_wtp)
+summary(experiment_model_cluster_wtp)
 
-# undestand classes
-posterior_probs_resp <- experiment_model_LCM_wtp$Wnq[seq(1, nrow(experiment_model_LCM_wtp$Wnq), by = 6), ]
-class_assignments <- apply(posterior_probs_resp, 1, which.max)
-table(class_assignments)
-
-respondent_data <- mlogit_data %>%
-  group_by(respondent_id) %>%
-  slice(1) %>%
-  ungroup()
-respondent_data$class <- class_assignments
-
-class_summary <- respondent_data %>%
-  group_by(class) %>%
-  summarise(
-    n = n(),
-    age_mean = mean(age, na.rm = TRUE),
-    market_awareness_mean = mean(market_awareness, na.rm = TRUE),
-    across(
-      c(is_female, income_high, income_low, is_graduated, city_over_500k, rural, eats_fastfood_weekly),
-      list(count = ~sum(.)),
-      .names = "{.col}_{.fn}"
-    )
-  )
-
-print(class_summary, n = Inf, width = Inf)
+experiment_model_cluster_wtp <- gmnl(
+  choice ~ brand.recall_this + brand.recognition_this + past.use_this +
+           is_well_known + is_bundle +
+           no_choice | # FIRST PART (V): Alternative-specific, generic coef
+           0 | # SECOND PART (S): Individual-specific, alternative-specific coef (none)
+           0 | # THIRD PART (A): Alternative-specific, alternative-specific coef (none)
+           0 | # FOURTH PART (M): Variables modifying mean of random params (none here)
+           market_awareness + is_female + cluster_2 + cluster_3, # <--- FIFTH PART (H): Variables affecting scale coefficient
+  data = mlogit_data,
+  model = "gmnl",
+  modelType = "wtp",
+  base = "price",
+  ranp = c(
+    is_well_known = "n",
+    is_bundle = "n",
+    brand.recall_this = "n",
+    brand.recognition_this = "n"
+  ),
+  R = 2000,
+  method = "bfgs"
+)
+summary(experiment_model_cluster_wtp)

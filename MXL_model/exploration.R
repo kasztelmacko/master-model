@@ -113,6 +113,16 @@ median_market_awareness <- respondent_data %>%
     .groups = "drop"
   )
 
+ggplot(respondent_data, aes(x = "", y = market_awareness)) +
+  geom_boxplot(fill = "skyblue", color = "darkblue", alpha = 0.7, outlier.shape = NA) +
+  geom_jitter(width = 0.1, alpha = 0.5, color = "black") +
+  labs(
+    title = "Market Awareness Across Population",
+    x = NULL,
+    y = "Market Awareness"
+  ) +
+  theme_minimal()
+
 cat("\nMedian market_awareness for each location:\n")
 print(median_market_awareness)
 

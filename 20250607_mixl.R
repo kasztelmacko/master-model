@@ -5,6 +5,7 @@ library(car)
 library(gmnl)
 library(ggplot2)
 library(cluster)
+library(stargazer)
 
 data <- read.csv("data/filtered_data.csv")
 
@@ -140,62 +141,11 @@ experiment_model_cluster_wtp <- gmnl(
   ranp = c(
     is_well_known = "n", 
     is_premium = "n",
-    brand.recognition_this = "n"
+    is_bundle = "n",
+    brand.recall_this = "n",
+    brand.recognition_this = "n",
+    past.use_this = "n"
     ),
   R = 2000
 )
 summary(experiment_model_cluster_wtp)
-
-## check random parameters significance
-model_fixed <- gmnl(
-  choice ~ brand.recall_this + brand.recognition_this + past.use_this +
-           is_well_known + is_bundle + is_premium +
-           market_awareness:price + is_female:price +
-           young_rare_fast_food_eaters:price + urban_frequent_eaters:price +
-           no_choice |
-           0 | 0 | 0 | 0,
-  data = mlogit_data,
-  model = "mixl",
-  modelType = "wtp",
-  base = "price",
-  ranp = c(
-    is_well_known = "n",
-    brand.recognition_this = "n"
-  ),
-  R = 2000
-)
-
-logLik(model_fixed)
-logLik(experiment_model_cluster_wtp)
-
-AIC(model_fixed)
-AIC(experiment_model_cluster_wtp)
-
-BIC(model_fixed)
-BIC(experiment_model_cluster_wtp)
-
-lrtest(experiment_model_cluster_wtp, model_fixed)
-
-# experiment with new intreaction terms
-experiment_model_cluster_wtp_interact <- gmnl(
-  choice ~ brand.recall_this + brand.recognition_this + past.use_this +
-           is_well_known + is_bundle + is_premium +
-           market_awareness:price + is_female:price +
-           young_rare_fast_food_eaters:price + urban_frequent_eaters:price +
-           no_choice |
-           0 |
-           0 |
-           0 |
-           0,
-  data = mlogit_data,
-  model = "mixl",
-  modelType = "wtp",
-  base = "price",
-  ranp = c(
-    is_well_known = "n", 
-    is_premium = "n",
-    brand.recognition_this = "n"
-    ),
-  R = 2000
-)
-summary(experiment_model_cluster_wtp_interact)
