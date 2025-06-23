@@ -140,7 +140,7 @@ summary_model(mixl_wtp_space)
 
 # Coefficients:
 #                                Estimate      Std. Error    z-value           Pr(>|z|)
-# no_choice                     -1.6253799     0.2745234    -5.9207         3.205e-09 ***
+# no_choice                     -1.6253799     0.2745234    -5.9207            3.205e-09 ***
 # brand.recall_this              0.1559079     0.1723729     0.9045            0.3657408
 # brand.recognition_this         0.0079343     0.1853271     0.0428            0.9658511
 # past.use_this                 -0.4125588     0.1612882    -2.5579            0.0105307 *
@@ -229,90 +229,59 @@ show_latent_class_statistics(lc_preference_space)
 ##########################################################################
 # LATENT CLASS WTP SPACE
 ##########################################################################
-lc_preference_space <- gmnl(
-  choice ~ 
-    brand.recall_this + brand.recognition_this + past.use_this +
-    is_well_known + 
-    is_bundle + 
-    is_premium +
-
-    brand.recall_this:city_over_500k +
-    brand.recall_this:rural +
-
-    past.use_this:market_awareness_log +
-    past.use_this:city_over_500k +
-    past.use_this:age_log +
-
-    is_well_known:income_high +
-    is_well_known:income_low +
-
-    is_premium:income_high +
-    no_choice |
-    0 |
-    0 |
-    0 |
-    1 +
-    age_log +
-    is_female +
-    income_high +
-    income_low +
-    is_graduated +
-    city_under_500k + rural +
-    market_awareness_low +
-    total_price_guess_diff_log +
-    eats_fastfood_weekly,
+lc_wtp_space <- gmnl(
+  choice ~ brand.recall_this + brand.recognition_this + past.use_this +
+        is_well_known + 
+        is_bundle + 
+        is_premium +
+        no_choice |
+        0 |
+        0 |
+        0 |
+        1 +
+        age_log +
+        is_female +
+        income_high + income_low +
+        is_graduated +
+        city_under_500k + rural +
+        # market_awareness_log +
+        eats_fastfood_weekly,
   data = mlogit_data,
   model = "lc",
+  modelType = "wtp",
+  base = "price",
   R = 2000,
   Q = 2
 )
-summary_model(lc_preference_space)
-show_latent_class_statistics(lc_preference_space)
+summary_model(lc_wtp_space)
+show_latent_class_statistics(lc_wtp_space)
 
 # Coefficients:
-#                                               Estimate  Std. Error z-value  Pr(>|z|)
-# class.1.brand.recall_this                   -0.0584219   0.7963559 -0.0734  0.9415184
-# class.1.brand.recognition_this              -0.1851423   0.3404262 -0.5439  0.5865417
-# class.1.past.use_this                       44.3134076  32.1160721  1.3798  0.1676516
-# class.1.is_well_known                       -4.0559822   1.2772153 -3.1756  0.0014950 **
-# class.1.is_bundle                            2.6306586   1.0126949  2.5977  0.0093856 **
-# class.1.is_premium                           0.5864212   0.4115249  1.4250  0.1541585
-# class.1.no_choice                           -1.8544441   0.4854954 -3.8197  0.0001336 ***
-# class.1.brand.recall_this:city_over_500k    -0.7167986   0.8433484 -0.8499  0.3953565
-# class.1.brand.recall_this:rural             -3.1925203   2.0570442 -1.5520  0.1206637
-# class.1.past.use_this:market_awareness_log  -5.2104629   3.9182496 -1.3298  0.1835863
-# class.1.past.use_this:city_over_500k        -0.7470377   0.9750144 -0.7662  0.4435685
-# class.1.past.use_this:age_log               -9.8489032   7.7363627 -1.2731  0.2029945
-# class.1.is_well_known:income_high            3.6363203   1.3170039  2.7611  0.0057615 **
-# class.1.is_well_known:income_low             1.0108665   1.7415886  0.5804  0.5616261
-# class.1.is_premium:income_high              -0.0438644   0.5667439 -0.0774  0.9383076
-# class.2.brand.recall_this                    1.7423801   0.5068458  3.4377  0.0005867 ***
-# class.2.brand.recognition_this               0.3350679   0.2895141  1.1573  0.2471313
-# class.2.past.use_this                      -18.0369899   6.4234383 -2.8080  0.0049851 **
-# class.2.is_well_known                        1.1592191   0.2574094  4.5034  6.687e-06 ***
-# class.2.is_bundle                           -1.0284645   0.2812309 -3.6570  0.0002552 ***
-# class.2.is_premium                          -0.1411369   0.1860655 -0.7585  0.4481315
-# class.2.no_choice                           -0.4536070   0.3265759 -1.3890  0.1648392
-# class.2.brand.recall_this:city_over_500k    -1.2071265   0.4981976 -2.4230  0.0153935 *
-# class.2.brand.recall_this:rural             -0.7844879   0.7754238 -1.0117  0.3116867
-# class.2.past.use_this:market_awareness_log   2.3237301   0.8127704  2.8590  0.0042495 **
-# class.2.past.use_this:city_over_500k         0.3561146   0.3919840  0.9085  0.3636180
-# class.2.past.use_this:age_log                3.7292968   1.7768158  2.0989  0.0358288 *
-# class.2.is_well_known:income_high            8.8362772 108.3734032  0.0815  0.9350161
-# class.2.is_well_known:income_low            -0.4622107   0.3150121 -1.4673  0.1423001
-# class.2.is_premium:income_high             -19.0660233 176.2419127 -0.1082  0.9138521
-# (class)2                                    11.9467946   4.3951678  2.7182  0.0065645 **
-# age_log:class2                              -3.4235161   1.3728744 -2.4937  0.0126425 *
-# class2:is_female                            -0.2049742   0.2559342 -0.8009  0.4231973
-# class2:income_high                          -2.0702958   0.4645109 -4.4569  8.314e-06 ***
-# class2:income_low                           -0.1973756   0.3323732 -0.5938  0.5526210
-# class2:is_graduated                         -0.0077278   0.2553042 -0.0303  0.9758526
-# class2:city_under_500k                      -0.2877169   0.2982995 -0.9645  0.3347835
-# class2:rural                                -0.2877310   0.4242637 -0.6782  0.4976518
-# class2:market_awareness_low                 -0.6606386   0.2950779 -2.2389  0.0251649 *
-# class2:total_price_guess_diff_log            0.2795420   0.1315975  2.1242  0.0336518 *
-# class2:eats_fastfood_weekly                 -0.4076027   0.2592211 -1.5724  0.1158548
+#                                   Estimate  Std. Error z-value  Pr(>|z|)
+# class.1.brand.recall_this      -1.0474e+00  4.8895e-01 -2.1421  0.032186 *
+# class.1.brand.recognition_this  2.3043e-01  4.0413e-01  0.5702  0.568544
+# class.1.past.use_this          -3.5785e-01  5.9828e-01 -0.5981  0.549758
+# class.1.is_well_known          -4.2457e+01  2.3498e+04 -0.0018  0.998558
+# class.1.is_bundle               4.3232e+01  2.3498e+04  0.0018  0.998532
+# class.1.is_premium              3.1615e-01  3.4958e-01  0.9044  0.365800
+# class.1.no_choice              -1.7258e+00  5.2205e-01 -3.3058  0.000947 ***
+# class.2.brand.recall_this       7.4850e-01  2.5529e-01  2.9320  0.003368 **
+# class.2.brand.recognition_this -1.2742e-01  2.8886e-01 -0.4411  0.659136
+# class.2.past.use_this          -2.6329e-01  1.7471e-01 -1.5070  0.131811    
+# class.2.is_well_known           1.0262e+00  2.3789e-01  4.3138 1.605e-05 ***
+# class.2.is_bundle              -1.1808e+00  2.8992e-01 -4.0729 4.644e-05 ***
+# class.2.is_premium             -4.5436e-02  1.8247e-01 -0.2490  0.803356
+# class.2.no_choice              -7.7967e-01  3.2938e-01 -2.3671  0.017928 *
+# (class)2                        1.2047e+01  3.8781e+00  3.1063  0.001894 **
+# age_log:class2                 -3.4585e+00  1.2018e+00 -2.8778  0.004005 **
+# class2:is_female               -7.6624e-02  2.2948e-01 -0.3339  0.738452
+# class2:income_high             -8.3667e-01  3.4689e-01 -2.4119  0.015869 *
+# class2:income_low              -4.1307e-01  2.4299e-01 -1.7000  0.089138 .
+# class2:is_graduated             4.2124e-02  2.2962e-01  0.1835  0.854443
+# class2:city_under_500k          1.4235e-01  2.8466e-01  0.5001  0.617022
+# class2:rural                   -4.8125e-01  3.5381e-01 -1.3602  0.173764    
+# class2:eats_fastfood_weekly    -2.2860e-01  2.2351e-01 -1.0228  0.306425
 
-# Log Likelihood: -1086
-# AIC: 2254.006
-# BIC: 2450.076 
+# Log Likelihood: -1104.3
+# AIC: 2256.628
+# BIC: 2371.401
