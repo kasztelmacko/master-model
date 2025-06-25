@@ -107,14 +107,3 @@ design <- design %>%
 design %>%
   mutate(id = row_number(), .before = 1) %>% 
   write.csv("data/DCE_design.csv", row.names = FALSE)
-
-
-
-
-
-
-
-
-
-
-
