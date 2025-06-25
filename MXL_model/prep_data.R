@@ -14,12 +14,14 @@ design <- design %>%
 
 # initial data cleaning
 extract_values_to_array <- function(column, output_type = "character") {
-    column <- gsub("^\\[|\\]$", "", column)
-    column <- gsub('\\"', "", column)
+    column <- gsub('^\\["*|("*\\]$)', '', column)
+    column <- gsub('""', '"', column)
+    column <- gsub('\\"', '', column)
     result <- strsplit(column, ",")
+    
     if (output_type == "numeric") {
         result <- lapply(result, function(x) {
-            suppressWarnings(as.numeric(x))
+            suppressWarnings(as.numeric(trimws(x)))
         })
     } else if (output_type == "character") {
         result <- lapply(result, trimws)
@@ -330,6 +332,8 @@ design_cols <- c(
   "question_id",
   "choice",
   "price",
+  "gram",
+  "kcal",
   "type_burger_classic", 
   "type_burger_premium",
   "type_bundle_classic",
