@@ -1,4 +1,4 @@
-setwd("MXL_model")
+setwd("Modeling")
 library(dplyr)
 library(tidyr)
 # load data
