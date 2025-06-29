@@ -63,6 +63,7 @@ simplest_mnl <- gmnl(
   type_bundle_classic +
   type_bundle_premium +
   price +
+  price:market_awareness_log +
   no_choice |
             0 |
             0 |
@@ -74,19 +75,20 @@ simplest_mnl <- gmnl(
 summary_model(simplest_mnl)
 
 # Coefficients:
-#                        Estimate  Std. Error z-value  Pr(>|z|)
-# brand_burger_king    0.33269336  0.12718141  2.6159  0.008899 **
-# brand_max_burger     0.08344107  0.12358205  0.6752  0.499557    
-# brand_wendys         0.11569252  0.11607054  0.9967  0.318889
-# type_burger_premium  0.07691297  0.17229281  0.4464  0.655302
-# type_bundle_classic -0.38662661  0.21267275 -1.8179  0.069073 .
-# type_bundle_premium -0.30661975  0.21322028 -1.4380  0.150422
-# price               -0.00035051  0.01032297 -0.0340  0.972913
-# no_choice           -1.19133293  0.24096627 -4.9440 7.654e-07 ***
+#                             Estimate Std. Error z-value Pr(>|z|)
+# brand_burger_king           0.325940   0.127383  2.5587 0.010505 *  
+# brand_max_burger            0.085357   0.123722  0.6899 0.490250
+# brand_wendys                0.117147   0.116091  1.0091 0.312929
+# type_burger_premium         0.076455   0.172539  0.4431 0.657680
+# type_bundle_classic        -0.379524   0.213107 -1.7809 0.074927 .
+# type_bundle_premium        -0.296690   0.213464 -1.3899 0.164565
+# price                      -0.116510   0.043432 -2.6826 0.007305 **
+# no_choice                  -1.210851   0.241698 -5.0098 5.45e-07 ***
+# price:market_awareness_log  0.050493   0.018306  2.7584 0.005809 **
 
-# Log Likelihood: -1144.1
-# AIC: 2304.258
-# BIC: 2342.515
+# Log Likelihood: -1140.3
+# AIC: 2298.677
+# BIC: 2341.717
 
 ##########################################################################
 # SIMPLEST LC PREFERENCE SPACE
@@ -164,6 +166,7 @@ mixl_preference_space <- gmnl(
     is_bundle + 
     is_premium +
     price +
+    price:market_awareness_log +
     no_choice |
     0 |
     0 |
@@ -172,7 +175,7 @@ mixl_preference_space <- gmnl(
   data = mlogit_data,
   model = "mixl",
   ranp = c(
-    price = "n",
+    # price = "n",
     is_well_known = "n",
     is_premium = "n",
     is_bundle = "n",
@@ -185,27 +188,51 @@ mixl_preference_space <- gmnl(
 summary_model(mixl_preference_space)
 
 # Coefficients:
-#                                Estimate      Std. Error    z-value           Pr(>|z|)
-# price                         -0.0028790     0.0110968    -0.2594483         0.795    
-# is_well_known                  0.1324477     0.1273240     1.0402410         0.299    
-# is_bundle                     -0.2873077     0.2103598    -1.3657918         0.172
-# is_premium                     0.0649254     0.1265723     0.5129514         0.608
-# no_choice                     -1.7613587     0.2982387    -5.9058682         5e-09 ***
-# past.use_this                 -0.2910909     0.1296052    -2.2459822         0.025 *
-# brand.recall_this              0.0786449     0.1380627     0.5696316         0.569
-# brand.recognition_this        -0.0550320     0.1329816    -0.4138317         0.679
-# sd.price                      -0.0438321     0.0079869    -5.4879944      5.31e-08 ***
-# sd.is_well_known              -0.4053042     0.2717046    -1.4917090         0.136
-# sd.is_bundle                  -0.0004197    19.2653257    -0.0000218             1
-# sd.is_premium                  0.0008106    13.3312685     0.0000608             1
-# sd.past.use_this              -0.0011654    16.4267239    -0.0000709             1
-# sd.brand.recall_this          -0.0382402     2.9890810    -0.0127933          0.99
-# sd.brand.recognition_this     -0.0114388     4.9770157    -0.0022983         0.998
+#                               Estimate  Std. Error z-value  Pr(>|z|)    
+# no_choice                  -2.0686e+00  5.9048e-01 -3.5032 0.0004597 ***
+# price:market_awareness_log  9.5909e-02  3.4166e-02  2.8071 0.0049984 **
+# brand.recall_this           1.2340e-01  1.8715e-01  0.6594 0.5096635
+# brand.recognition_this     -1.5755e-02  2.1857e-01 -0.0721 0.9425359
+# past.use_this              -4.2956e-01  1.7185e-01 -2.4997 0.0124304 *
+# is_well_known               3.5199e-02  2.0642e-01  0.1705 0.8646038
+# is_bundle                  -4.0982e-01  2.7892e-01 -1.4693 0.1417571
+# is_premium                 -4.0263e-03  1.7597e-01 -0.0229 0.9817457
+# price                      -2.1708e-01  7.9795e-02 -2.7205 0.0065182 **
+# sd.brand.recall_this        4.2652e-02  1.6774e+00  0.0254 0.9797141    
+# sd.brand.recognition_this   1.7345e+00  5.8035e-01  2.9887 0.0028021 **
+# sd.past.use_this            7.5261e-05  1.9653e+00  0.0000 0.9999694
+# sd.is_well_known            2.7449e+00  7.5456e-01  3.6377 0.0002751 ***
+# sd.is_bundle                4.0356e-02  9.3907e-01  0.0430 0.9657221
+# sd.is_premium               1.1447e+00  5.6001e-01  2.0441 0.0409422 *
+# sd.price                    2.3986e-02  4.2774e-02  0.5608 0.5749598
 
-# Log-Likelihood= -1126.341
-# AIC= 2282.683
-# BIC= 2354.416
-#NOTE estiamtes from pylogit 
+# Log Likelihood: -1127.1
+# AIC: 2286.158
+# BIC: 2362.673
+
+# albo bez efektu na price
+
+# Coefficients:
+#                              Estimate Std. Error z-value  Pr(>|z|)    
+# brand.recall_this           0.1234268  0.1850924  0.6668  0.504875
+# brand.recognition_this     -0.0145174  0.2149008 -0.0676  0.946141
+# past.use_this              -0.4228207  0.1722180 -2.4551  0.014083 *
+# is_well_known               0.0354841  0.2034595  0.1744  0.861548
+# is_bundle                  -0.4400048  0.2569197 -1.7126  0.086783 .
+# is_premium                  0.0022607  0.1729693  0.0131  0.989572
+# price                      -0.2096424  0.0728799 -2.8765  0.004021 **
+# price:market_awareness_log  0.0929948  0.0314966  2.9525  0.003152 **
+# no_choice                  -1.9438352  0.3945558 -4.9266 8.365e-07 ***
+# sd.brand.recall_this        0.0175146  1.5651920  0.0112  0.991072
+# sd.brand.recognition_this   1.6760986  0.5261729  3.1855  0.001445 ** 
+# sd.past.use_this            0.0561051  1.9108417  0.0294  0.976576
+# sd.is_well_known            2.6934220  0.7149279  3.7674  0.000165 ***
+# sd.is_bundle                0.0102934  1.1207557  0.0092  0.992672
+# sd.is_premium               1.1753202  0.5195738  2.2621  0.023692 *
+
+# Log Likelihood: -1127.1
+# AIC: 2284.285
+# BIC: 2356.018
 
 ##########################################################################
 # MIXED WTP SPACE
@@ -293,39 +320,39 @@ summary_model(lc_preference_space)
 show_latent_class_statistics(lc_preference_space)
 
 # Coefficients:
-#                                      Estimate     Std. Error    z-value     Pr(>|z|)
-# class.1.brand.recall_this            0.814261     0.258601      3.1487      0.0016399 **
-# class.1.brand.recognition_this      -0.203469     0.291689     -0.6976      0.4854570
-# class.1.past.use_this               -0.277397     0.174008     -1.5942      0.1108989
-# class.1.is_well_known                0.967080     0.260095      3.7182      0.0002007 ***
-# class.1.is_bundle                   -1.237689     0.379446     -3.2618      0.0011070 ** 
-# class.1.is_premium                  -0.170394     0.224885     -0.7577      0.4486344
-# class.1.price                       -0.133900     0.067480     -1.9843      0.0472258 *
-# class.1.no_choice                   -0.590670     0.497175     -1.1881      0.2348132
-# class.1.price:market_awareness_log   0.063597     0.027915      2.2782      0.0227119 *
-# class.2.brand.recall_this           -1.408214     0.807444     -1.7440      0.0811524 .
-# class.2.brand.recognition_this       0.370554     0.424494      0.8729      0.3827012
-# class.2.past.use_this               -0.211977     0.631794     -0.3355      0.7372362
-# class.2.is_well_known               -9.370381    81.052174     -0.1156      0.9079622
-# class.2.is_bundle                   10.160359    81.102637      0.1253      0.9003036    
-# class.2.is_premium                   0.076797     0.413761      0.1856      0.8527534
-# class.2.price                       -0.137713     0.250030     -0.5508      0.5817784
-# class.2.no_choice                   -1.075691     0.777712     -1.3831      0.1666194
-# class.2.price:market_awareness_log   0.082142     0.113273      0.7252      0.4683505
-# (class)2                           -11.135036     3.875710     -2.8730      0.0040655 **
-# age_log:class2                       3.087128     1.206634      2.5585      0.0105136 *
-# class2:is_female                     0.043645     0.229267      0.1904      0.8490203
-# class2:income_high                   0.777961     0.346569      2.2447      0.0247844 *  
-# class2:income_low                    0.366205     0.245591      1.4911      0.1359318
-# class2:is_graduated                 -0.005391     0.232088     -0.0232      0.9814681
-# class2:city_under_500k              -0.034675     0.293422     -0.1182      0.9059285
-# class2:rural                         0.375711     0.355556      1.0567      0.2906550
-# class2:market_awareness_low          0.400082     0.256336      1.5608      0.1185768
-# class2:eats_fastfood_weekly          0.305554     0.234542      1.3028      0.1926525
+#                                      Estimate Std. Error z-value  Pr(>|z|)
+# class.1.brand.recall_this            0.765091   0.265512  2.8816 0.0039571 **
+# class.1.brand.recognition_this      -0.249849   0.296199 -0.8435 0.3989382
+# class.1.past.use_this               -0.240961   0.175856 -1.3702 0.1706199
+# class.1.is_well_known                1.052598   0.255209  4.1245 3.716e-05 ***
+# class.1.is_bundle                   -1.343627   0.375318 -3.5800 0.0003436 ***
+# class.1.is_premium                  -0.149963   0.231109 -0.6489 0.5164127
+# class.1.price                       -0.140715   0.068225 -2.0625 0.0391594 *
+# class.1.price:market_awareness_log   0.067725   0.028068  2.4129 0.0158275 *  
+# class.1.no_choice                   -0.608523   0.518665 -1.1732 0.2406956
+# class.2.brand.recall_this           -1.110934   0.558724 -1.9883 0.0467739 *
+# class.2.brand.recognition_this       0.354294   0.406974  0.8706 0.3839967
+# class.2.past.use_this               -0.274432   0.607042 -0.4521 0.6512108
+# class.2.is_well_known               -7.628400  21.854637 -0.3491 0.7270505
+# class.2.is_bundle                    8.360527  21.939569  0.3811 0.7031508
+# class.2.is_premium                   0.044679   0.390452  0.1144 0.9088976
+# class.2.price                       -0.070208   0.200358 -0.3504 0.7260268
+# class.2.price:market_awareness_log   0.050385   0.088605  0.5686 0.5695968
+# class.2.no_choice                   -0.972787   0.714421 -1.3616 0.1733099
+# (class)2                           -11.251066   3.900388 -2.8846 0.0039191 **
+# age_log:class2                       3.215175   1.213515  2.6495 0.0080617 **
+# class2:is_female                     0.062317   0.225887  0.2759 0.7826434    
+# class2:income_high                   0.815672   0.342169  2.3838 0.0171335 *
+# class2:income_low                    0.382459   0.238626  1.6028 0.1089887
+# class2:is_graduated                 -0.025375   0.225491 -0.1125 0.9104023
+# class2:city_under_500k              -0.108116   0.282841 -0.3823 0.7022757
+# class2:rural                         0.441747   0.348626  1.2671 0.2051158
+# class2:market_awareness_low          0.161842   0.256815  0.6302 0.5285702
+# class2:eats_fastfood_weekly          0.215959   0.220022  0.9815 0.3263291
 
-# Log Likelihood: -1099.9
-# AIC: 2255.87
-# BIC: 2389.771
+# Log Likelihood: -1101.1
+# AIC: 2258.219 
+# BIC: 2392.12
 
 ##########################################################################
 # LATENT CLASS WTP SPACE
@@ -345,13 +372,12 @@ lc_wtp_space <- gmnl(
         income_high + income_low +
         is_graduated +
         city_under_500k + rural +
-        # market_awareness_log +
+        # market_awareness_low +
         eats_fastfood_weekly,
   data = mlogit_data,
   model = "lc",
   modelType = "wtp",
   base = "price",
-  R = 2000,
   Q = 2
 )
 summary_model(lc_wtp_space)
