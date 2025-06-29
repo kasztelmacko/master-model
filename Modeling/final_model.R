@@ -52,6 +52,21 @@ mlogit_data <- mlogit.data(
 )
 
 ##########################################################################
+# WHY price:market_awareness_log interaction is important?
+# introduction of the interaction allos for hetrogeneity in the price sensitivity,
+# meaning that the impact of price isn't the same for everyone.
+# For individuals with low market awareness, price sensitivity might be low because 
+# they lack the necessary information to critically evaluate the price of the product.
+# For those with high market awareness, price sensitivity is likely higher because
+# they are well-informed. They have stronger reference price points.
+
+# When the price coefficient alone is insignificant,
+# it often means the average price sensitivity across all consumers is close to zero
+# with interaction price becomes more specific effect for baseline group
+# The price:market_awareness_log interaction captures the significant variation in
+# price sensitivity across different levels of market awareness. 
+
+##########################################################################
 # SIMPLEST MNL PREFERENCE SPACE
 ##########################################################################
 simplest_mnl <- gmnl(
