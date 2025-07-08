@@ -195,39 +195,6 @@ process_brand_column <- function(data, column_name, defaults) {
   return(list(data = data, defaults = defaults))
 }
 
-add_brand_recall_score <- function(design, survey) {
-  recall_map <- setNames(survey$brand.recall, survey$respondent)
-  design$brand.recall_score <- 0
-
-  for (i in seq_len(nrow(design))) {
-    respondent_id <- design$respondent_id[i]
-    recalled_brands <- recall_map[[as.character(respondent_id)]]
-
-    if (is.null(recalled_brands) || length(recalled_brands) == 0 || all(is.na(recalled_brands))) {
-      next
-    }
-
-    for (brand_name in names(brand_mapping)) {
-      col_name <- brand_mapping[[brand_name]]
-
-      if (!col_name %in% names(design) || is.na(design[[col_name]][i]) || design[[col_name]][i] != 1) {
-        next
-      }
-      position <- match(brand_name, recalled_brands)
-      if (!is.na(position)) {
-        score <- if (position <= 3) 5 else if (position <= 6) 3 else 2
-      } else {
-        score <- 0
-      }
-
-      design$brand.recall_score[i] <- design$brand.recall_score[i] + score
-    }
-  }
-
-  return(design)
-}
-
-
 result_recall <- process_brand_column(survey, "brand.recall", defaults)
 survey <- result_recall$data
 defaults <- result_recall$defaults
@@ -235,6 +202,15 @@ defaults <- result_recall$defaults
 result_recognition <- process_brand_column(survey, "brand.recognition", defaults)
 survey <- result_recognition$data
 defaults <- result_recognition$defaults
+
+# create cleaned brand lists csv file
+brand_lists_cleaned <- survey %>%
+  select(respondent_id, brand.recall, brand.recognition) %>%
+  mutate(
+    brand.recall = sapply(brand.recall, function(x) paste(x, collapse = "; ")),
+    brand.recognition = sapply(brand.recognition, function(x) paste(x, collapse = "; "))
+  )
+write.csv(brand_lists_cleaned, "data/brand_lists_cleaned.csv", row.names = FALSE)
 
 # create brand_recall and brand_recognition csv files
 brand_recall_df <- survey %>%
@@ -255,24 +231,22 @@ brand_recognition_df <- survey %>%
 
 write.csv(brand_recognition_df, "data/brand_recognition.csv", row.names = FALSE)
 
+brand_lists_cleaned <- read.csv("data/brand_lists_cleaned.csv")
+design <- design %>%
+    left_join(brand_lists_cleaned, by = "respondent_id")
+
 design <- add_brand_indicators(design, survey, "past.use")
 design <- add_brand_indicators(design, survey, "brand.recall")
 design <- add_brand_indicators(design, survey, "brand.recognition")
-design <- add_brand_recall_score(design, survey)
+
 design <- design %>%
     mutate(
       is_well_known = ifelse(brand_mcdonalds == 1 | brand_burger_king == 1, 1,
-                        ifelse(brand_max_burger == 1 | brand_wendys == 1, 0, 0))
+                        ifelse(brand_max_burger == 1 | brand_wendys == 1, 0, 0)),
+      is_bundle = ifelse(type_bundle_classic == 1 | type_bundle_premium == 1, 1, 0),
+      is_premium = ifelse(type_burger_premium == 1 | type_bundle_premium == 1, 1, 0)
+
     )
-
-brand_lists_cleaned <- survey %>%
-  select(respondent_id, brand.recall, brand.recognition) %>%
-  mutate(
-    brand.recall = sapply(brand.recall, function(x) paste(x, collapse = "; ")),
-    brand.recognition = sapply(brand.recognition, function(x) paste(x, collapse = "; "))
-  )
-write.csv(brand_lists_cleaned, "data/brand_lists_cleaned.csv", row.names = FALSE)
-
 # create market awareness variable
 real_prices = list(
     22.9,  # WieśMac
@@ -299,9 +273,9 @@ calculate_recognition_score <- function(brand_list) {
 }
 
 calculate_price_score <- function(price_guesses) {
-  guess <- sum(unlist(price_guesses))
-  real_prices_sum <- sum(unlist(real_prices))
-  total_diff <- abs(guess - real_prices_sum)
+  guess <- unlist(price_guesses)
+  real <- unlist(real_prices)
+  total_diff <- abs(sum(guess) - sum(real))
   
   if (total_diff < 1.5) return(5)
   else if (total_diff < 3) return(4)
@@ -314,22 +288,24 @@ survey <- survey %>%
   mutate(
     total_recalled = sapply(brand.recall, function(x) length(x)),
     total_recognized = sapply(brand.recognition, function(x) length(x)),
-    total_price_guess_diff = sapply(price.guess, function(x) {
-      guess <- sum(unlist(x))
-      real <- sum(unlist(real_prices))
-      abs(guess - real)
+    avg_price_guess_diff = sapply(price.guess, function(x) {
+      guess <- unlist(x)
+      real <- unlist(real_prices)
+      mean(abs(guess - real))
     }),
-    
-    recall_score = sapply(brand.recall, calculate_recall_score),
-    recognition_score = sapply(brand.recognition, calculate_recognition_score),
-    price_score = sapply(price.guess, calculate_price_score),
-    market_awareness = recall_score + recognition_score + price_score
+  )
+
+design <- design %>%
+  mutate(
+    respondent_question_id = paste0(respondent_id, "_", question_id)
   )
 
 # create final model dataframe
 design_cols <- c(
   "respondent_id",
   "question_id",
+  "respondent_question_id",
+  "alternative_id",
   "choice",
   "price",
   "gram",
@@ -343,11 +319,12 @@ design_cols <- c(
   "brand_max_burger",
   "brand_wendys",
   "is_well_known",
+  "is_bundle",
+  "is_premium",
   "no_choice",
   "past.use_this",
   "brand.recall_this",
-  "brand.recognition_this",
-  "brand.recall_score"
+  "brand.recognition_this"
 )
 
 survey_cols <- c(
@@ -358,10 +335,9 @@ survey_cols <- c(
   "location",
   "fast.food.frequency",
   "education",
-  "market_awareness",
   "total_recalled",
   "total_recognized",
-  "total_price_guess_diff"
+  "avg_price_guess_diff"
 )
 
 model_data <- design %>%
@@ -373,4 +349,4 @@ model_data <- design %>%
 str(model_data)
 
 # save data
-write.csv(model_data, "data/clean_data.csv", row.names = FALSE)
+write.csv(model_data, "data_new/clean_data.csv", row.names = FALSE)
