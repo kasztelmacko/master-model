@@ -78,7 +78,7 @@ simplest_mnl <- gmnl(
   type_bundle_classic +
   type_bundle_premium +
   price +
-  price:market_awareness_log +
+  # price:market_awareness_log +
   no_choice |
             0 |
             0 |
@@ -134,6 +134,7 @@ simplest_lc <- gmnl(
   Q = 2
 )
 summary_model(simplest_lc)
+wtp.gmnl(simplest_lc, wrt = "price")
 show_latent_class_statistics(simplest_lc)
 
 # Coefficients:

@@ -32,6 +32,11 @@ show_latent_class_statistics <- function(model) {
     )
 
   print(class_summary, n = Inf, width = Inf)
+
+  respondent_classes <- respondent_data %>%
+    select(respondent_id, class)
+
+  return(respondent_classes)
   }
 
 summary_model <- function(model) {
@@ -40,6 +45,10 @@ summary_model <- function(model) {
   cat("\nAIC:", AIC(model), "\n")
   cat("BIC:", BIC(model), "\n")
 }
+
+# data <- data %>% filter(income_high == 0, age < 28)
+data <- data %>%
+  filter(respondent_id %in% (respondent_classes %>% filter(class != 2) %>% pull(respondent_id)))
 
 mlogit_data <- mlogit.data(
   data,
@@ -104,13 +113,14 @@ lc_preference_space <- gmnl(
 )
 
 summary_model(lc_preference_space)
-show_latent_class_statistics(lc_preference_space)
+respondent_classes <- show_latent_class_statistics(lc_preference_space)
 
 lc_model <- gmnl(
   choice ~ brand.recall_this + brand.recognition_this + past.use_this +
         is_well_known + 
         is_bundle + 
         is_premium +
+        price +
         no_choice |
         0 |
         0 |
@@ -121,7 +131,7 @@ lc_model <- gmnl(
         income_high + income_low +
         is_graduated +
         city_under_500k + rural +
-        # market_awareness_log +
+        market_awareness_low +
         eats_fastfood_weekly,
   data = mlogit_data,
   model = "lc",
@@ -131,13 +141,14 @@ lc_model <- gmnl(
   Q = 2
 )
 summary_model(lc_model)
-show_latent_class_statistics(lc_model)
+respondent_classes <- show_latent_class_statistics(lc_model)
+
 
 
 simplest_model <- gmnl(
   choice ~ 
   # brand_mcdonalds
-  brand.recall_this + brand.recognition_this + past.use_this +
+  # brand.recall_this + brand.recognition_this + past.use_this +
   # is_well_known +
   # is_bundle +
   # is_premium +
@@ -157,17 +168,17 @@ simplest_model <- gmnl(
             0 |
             0,
   data = mlogit_data,
-  model="mixl",
-  R = 2000,
-  ranp = c(
-    brand_burger_king = "n",
-    brand_max_burger = "n",
-    brand_wendys = "n",
-    type_burger_premium = "n",
-    type_bundle_classic = "n",
-    type_bundle_premium = "n",
-    price = "n"
-  )
+  model="mnl",
+  # R = 2000,
+  # ranp = c(
+  #   brand_burger_king = "n",
+  #   brand_max_burger = "n",
+  #   brand_wendys = "n",
+  #   type_burger_premium = "n",
+  #   type_bundle_classic = "n",
+  #   type_bundle_premium = "n",
+  #   price = "n"
+  # )
 )
 
 summary_model(simplest_model)

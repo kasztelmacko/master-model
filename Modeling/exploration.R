@@ -38,7 +38,6 @@ filtered_count <- filtered_data %>%
   nrow()
 
 cat("Number of respondent_id in filtered_data:", filtered_count, "\n")
-write.csv(filtered_data, "data/filtered_data.csv", row.names = FALSE)
 
 # create survey calls
 survey_cols <- c(
@@ -49,7 +48,9 @@ survey_cols <- c(
   "location",
   "fast.food.frequency",
   "education",
-  "market_awareness"
+  "total_recalled",
+  "total_recognized",
+  "avg_price_guess_diff"
 )
 
 respondent_data <- filtered_data %>%
@@ -85,6 +86,18 @@ box_plot <- ggplot(respondent_data, aes(x = age, y = 1)) +
 
 ggsave("plots/age_distribution_plot.png", grid.arrange(hist_plot, box_plot, ncol = 1, heights = c(3, 1)), width = 8, height = 6)
 
+# plot recall, recognition, and price guess differences 
+survey_long <- survey %>%
+  select(total_recalled, total_recognized, avg_price_guess_diff) %>%
+  pivot_longer(cols = everything(), names_to = "metric", values_to = "value")
+
+market_awareness_plot <- ggplot(survey_long, aes(x = metric, y = value, fill = "white")) +
+  geom_boxplot(fill = "white", color = "black", width = 0.2) +
+  scale_fill_brewer(palette = "Pastel1") +
+  theme_minimal() +
+  theme(legend.position = "none", axis.title.x = element_blank())
+ggsave("plots/marekt_awareness_stats.png", market_awareness_plot, width = 8, height = 6)
+
 # show population statistics
 calculate_statistics <- function(data, column_name) {
   stats <- data %>%
@@ -105,26 +118,6 @@ calculate_statistics(respondent_data, "education")
 calculate_statistics(respondent_data, "income")
 calculate_statistics(respondent_data, "location")
 calculate_statistics(respondent_data, "fast.food.frequency")
-
-median_market_awareness <- respondent_data %>%
-  group_by(location) %>%
-  summarise(
-    avg_market_awareness = mean(market_awareness, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-ggplot(respondent_data, aes(x = "", y = market_awareness)) +
-  geom_boxplot(fill = "skyblue", color = "darkblue", alpha = 0.7, outlier.shape = NA) +
-  geom_jitter(width = 0.1, alpha = 0.5, color = "black") +
-  labs(
-    title = "Market Awareness Across Population",
-    x = NULL,
-    y = "Market Awareness"
-  ) +
-  theme_minimal()
-
-cat("\nMedian market_awareness for each location:\n")
-print(median_market_awareness)
 
 # plot recall
 generate_plot <- function(data, highlight_brands, brand_column, plot_title) {
@@ -169,3 +162,46 @@ plot_recognition <- generate_plot(brand_recognition_data, highlight_brands, "bra
 ggsave("plots/recall_recognition_plot.png", 
        grid.arrange(plot_recall, plot_recognition, ncol = 2),
        width = 8, height = 6)
+
+filtered_data <- filtered_data %>%
+  mutate(
+    # Group location
+    location_grouped = case_when(
+      location %in% c("miast-50", "miasto-50-150", "miasto-150-500") ~ "city_under_500k",
+      location == "miasto-500" ~ "city_over_500k",
+      location == "wies" ~ "rural"
+    ),
+    city_under_500k = ifelse(location_grouped == "city_under_500k", 1, 0),
+    city_over_500k = ifelse(location_grouped == "city_over_500k", 1, 0),
+    rural = ifelse(location_grouped == "rural", 1, 0),
+
+    # Gender dummies
+    is_female = ifelse(gender == "kobieta", 1, 0),
+    # is_male = ifelse(gender == "mezczyzna", 1, 0),
+
+    # Education dummies
+    is_graduated = ifelse(education == "wyzsze", 1, 0),
+
+    # Income dummies
+    income_low = ifelse(income %in% c("ponizej-1000", "1000-2500"), 1, 0),
+    income_mid = ifelse(income %in% c("2500-5000", "5000-7500"), 1, 0),
+    income_high = ifelse(income %in% c("7500-10000", "powyzej-10000"), 1, 0),
+
+    # Fast food frequency dummies
+    eats_fastfood_weekly = ifelse(fast.food.frequency %in% c("raz-w-tygodniu", "czesciej-niz-raz-w-tygodniu"), 1, 0),
+    eats_fastfood_rarely = ifelse(fast.food.frequency %in% c("rzadziej-niz-raz-w-miesiacu", "raz-w-miesiacu"), 1, 0)
+  ) %>%
+  select(
+    -location, -location_grouped,
+    -gender,
+    -education,
+    -income,
+    -fast.food.frequency
+  )
+
+filtered_data <- filtered_data %>%
+  mutate(
+    respondent_question_id = paste0(respondent_id, "_", question_id)
+  )
+
+write.csv(filtered_data, "data_new/filtered_data.csv", row.names = FALSE)

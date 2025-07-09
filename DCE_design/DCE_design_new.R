@@ -65,6 +65,11 @@ no_choice_rows[value_cols] <- 0
 long_design <- bind_rows(long_design, no_choice_rows) %>%
   arrange(block_id, question_id, alternative_id)
 
+long_design <- long_design %>%
+  group_by(block_id) %>%
+  mutate(question_id = dense_rank(question_id)) %>%
+  ungroup()
+
 respondents <- tibble(
   respondent_id = 1:500,
   block_id = rep(1:10, each = 50)
