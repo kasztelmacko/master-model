@@ -23,11 +23,16 @@ long_design <- raw_design %>%
 
 long_design <- long_design %>%
   mutate(
-    type_label = type_conf[type],
-    brand_label = brand_conf[brand]
+    type_label = factor(type_conf[type], levels = type_conf),
+    brand_label = factor(brand_conf[brand], levels = brand_conf)
   )
 
-dummies <- model.matrix(~ type_label + brand_label - 1, data = long_design) %>%
+dummies <- model.matrix(~ brand_label + type_label - 1, 
+                        data = long_design,
+                        contrasts.arg = list(
+                          brand_label = contrasts(long_design$brand_label, contrasts = FALSE),
+                          type_label = contrasts(long_design$type_label, contrasts = FALSE)
+                        )) %>%
   as.data.frame()
 
 colnames(dummies) <- colnames(dummies) %>%
