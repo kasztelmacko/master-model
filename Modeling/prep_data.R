@@ -2,14 +2,20 @@ setwd("Modeling")
 library(dplyr)
 library(tidyr)
 # load data
-design <- read.csv("data/DCE_design.csv")
-survey <- read.csv("data/survey_results.csv")
+design <- read.csv("data/2/DCE_design_new.csv")
+survey <- read.csv("data/2/survey_results_new.csv")
 
 # remove unnecessary columns
 survey <- survey %>%
-    select(-id, -created_at, -vigniette)
+    select(
+      -id, 
+      -created_at, 
+      -vigniette
+      )
 design <- design %>%
-    select(-id, -profile_id, -block_id, observation_id) %>%
+    select(
+      -block_id, 
+      ) %>%
     mutate(choice = 0)
 
 # initial data cleaning
@@ -61,7 +67,7 @@ for (i in 1:nrow(survey)) {
 }
 
 # create _this variables
-defaults <- c("mcdonalds", "burgerking", "wendys", "maxburgers", "popeyes","subway", "kfc", "pizzahut", "tacobell", "dominos", "dunkindonuts", "pandaexpress", "chipotle", "fiveguys", "5guys", "panerabread", "chickfila", "northfish", "shakeshack", "bobbyburger","thaiwok", "pasibus", "papajohns", "telepizza", "dominospizza", "chuckecheese", "saladstory", "innout", "kebabking", "amirkebab", "matsuya", "mosburger", "dagrasso", "raisingcanes", "dairyqueen", "jollibee", "sonic", "arbys", "whataburger", "whitecastle", "littleceaser", "dodopizza", "zahirkebab", "wingstop", "donerkebab", "hesburger", "otacos", "pizzadominos", "hooters", "wrapme", "pizzadagrasso", "applebees", "silverdragon", "loteria", "wkusnoitoczka")
+defaults <- c("mcdonalds", "burgerking", "wendys", "maxburgers", "popeyes","subway", "kfc", "pizzahut", "tacobell", "dunkindonuts", "pandaexpress", "chipotle", "fiveguys", "5guys", "panerabread", "chickfila", "northfish", "shakeshack", "bobbyburger","thaiwok", "pasibus", "papajohns", "telepizza", "dominospizza", "chuckecheese", "saladstory", "innout", "kebabking", "amirkebab", "matsuya", "mosburger", "dagrasso", "raisingcanes", "dairyqueen", "jollibee", "sonic", "arbys", "whataburger", "whitecastle", "littleceaser", "dodopizza", "zahirkebab", "wingstop", "donerkebab", "hesburger", "otacos", "hooters", "wrapme", "pizzadagrasso", "applebees", "silverdragon", "loteria", "wkusnoitoczka")
 brand_mapping <- list(
     "mcdonalds" = "brand_mcdonalds",
     "burgerking" = "brand_burger_king",
@@ -210,7 +216,7 @@ brand_lists_cleaned <- survey %>%
     brand.recall = sapply(brand.recall, function(x) paste(x, collapse = "; ")),
     brand.recognition = sapply(brand.recognition, function(x) paste(x, collapse = "; "))
   )
-write.csv(brand_lists_cleaned, "data/brand_lists_cleaned.csv", row.names = FALSE)
+write.csv(brand_lists_cleaned, "data/2/brand_lists_cleaned.csv", row.names = FALSE)
 
 # create brand_recall and brand_recognition csv files
 brand_recall_df <- survey %>%
@@ -220,7 +226,7 @@ brand_recall_df <- survey %>%
   summarise(count = n(), .groups = "drop") %>%
   arrange(desc(count))
 
-write.csv(brand_recall_df, "data/brand_recall.csv", row.names = FALSE)
+write.csv(brand_recall_df, "data/2/brand_recall.csv", row.names = FALSE)
 
 brand_recognition_df <- survey %>%
   select(brand.recognition) %>%
@@ -229,11 +235,11 @@ brand_recognition_df <- survey %>%
   summarise(count = n(), .groups = "drop") %>%
   arrange(desc(count))
 
-write.csv(brand_recognition_df, "data/brand_recognition.csv", row.names = FALSE)
+write.csv(brand_recognition_df, "data/2/brand_recognition.csv", row.names = FALSE)
 
-brand_lists_cleaned <- read.csv("data/brand_lists_cleaned.csv")
-design <- design %>%
-    left_join(brand_lists_cleaned, by = "respondent_id")
+# brand_lists_cleaned <- read.csv("data/brand_lists_cleaned.csv")
+# design <- design %>%
+#     left_join(brand_lists_cleaned, by = "respondent_id")
 
 design <- add_brand_indicators(design, survey, "past.use")
 design <- add_brand_indicators(design, survey, "brand.recall")
@@ -253,36 +259,6 @@ real_prices = list(
     25.99, # Whopper
     32.8  # McZestaw McRoyal
 )
-
-calculate_recall_score <- function(brand_list) {
-  num_recalled <- length(brand_list)
-  if (num_recalled >= 10) return(5)
-  else if (num_recalled >= 7) return(4)
-  else if (num_recalled >= 5) return(3)
-  else if (num_recalled >= 3) return(2)
-  else return(1)
-}
-
-calculate_recognition_score <- function(brand_list) {
-  num_recognized <- length(brand_list)
-  if (num_recognized >= 7) return(5)
-  else if (num_recognized >= 5) return(4)
-  else if (num_recognized >= 4) return(3)
-  else if (num_recognized >= 3) return(2)
-  else return(1)
-}
-
-calculate_price_score <- function(price_guesses) {
-  guess <- unlist(price_guesses)
-  real <- unlist(real_prices)
-  total_diff <- abs(sum(guess) - sum(real))
-  
-  if (total_diff < 1.5) return(5)
-  else if (total_diff < 3) return(4)
-  else if (total_diff < 9) return(3)
-  else if (total_diff < 15) return(2)
-  else return(1)
-}
 
 survey <- survey %>%
   mutate(
@@ -349,4 +325,4 @@ model_data <- design %>%
 str(model_data)
 
 # save data
-write.csv(model_data, "data_new/clean_data.csv", row.names = FALSE)
+write.csv(model_data, "data/2/clean_data.csv", row.names = FALSE)

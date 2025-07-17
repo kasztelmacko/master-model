@@ -7,7 +7,7 @@ library(ggplot2)
 library(cluster)
 library(gtools)
 
-data <- read.csv("data/final_data.csv")
+data <- read.csv("data/2/clean_data.csv")
 
 show_latent_class_statistics <- function(model) {
   posterior_probs_resp <- model$Wnq[seq(1, nrow(model$Wnq), by = 6), ]
@@ -51,20 +51,6 @@ mlogit_data <- mlogit.data(
   id.var = "respondent_id"
 )
 
-##########################################################################
-# WHY price:market_awareness_log interaction is important?
-# introduction of the interaction allos for hetrogeneity in the price sensitivity,
-# meaning that the impact of price isn't the same for everyone.
-# For individuals with low market awareness, price sensitivity might be low because 
-# they lack the necessary information to critically evaluate the price of the product.
-# For those with high market awareness, price sensitivity is likely higher because
-# they are well-informed. They have stronger reference price points.
-
-# When the price coefficient alone is insignificant,
-# it often means the average price sensitivity across all consumers is close to zero
-# with interaction price becomes more specific effect for baseline group
-# The price:market_awareness_log interaction captures the significant variation in
-# price sensitivity across different levels of market awareness. 
 
 ##########################################################################
 # SIMPLEST MNL PREFERENCE SPACE
@@ -78,7 +64,8 @@ simplest_mnl <- gmnl(
   type_bundle_classic +
   type_bundle_premium +
   price +
-  # price:market_awareness_log +
+  kcal +
+  gram +
   no_choice |
             0 |
             0 |
@@ -86,6 +73,8 @@ simplest_mnl <- gmnl(
             0,
   data = mlogit_data,
   model="mnl",
+  # modelType = "wtp",
+  # base = "price",
 )
 summary_model(simplest_mnl)
 
@@ -104,6 +93,28 @@ summary_model(simplest_mnl)
 # Log Likelihood: -1140.3
 # AIC: 2298.677
 # BIC: 2341.717
+
+simplest_mnl <- gmnl(
+  choice ~ 
+  brand.recall_this +
+  brand.recognition_this +
+  past.use_this +
+  is_well_known +
+  is_bundle +
+  is_premium +
+  price +
+  kcal +
+  gram +
+  no_choice |
+            0 |
+            0 |
+            0 |
+            0,
+  data = mlogit_data,
+  model="mnl",
+)
+summary_model(simplest_mnl)
+wtp.gmnl(simplest_mnl, wrt = "price")
 
 ##########################################################################
 # SIMPLEST LC PREFERENCE SPACE
@@ -182,7 +193,8 @@ mixl_preference_space <- gmnl(
     is_bundle + 
     is_premium +
     price +
-    price:market_awareness_log +
+    kcal +
+    gram +
     no_choice |
     0 |
     0 |
@@ -192,6 +204,8 @@ mixl_preference_space <- gmnl(
   model = "mixl",
   ranp = c(
     # price = "n",
+    # kcal = "n",
+    # gram = "n",
     is_well_known = "n",
     is_premium = "n",
     is_bundle = "n",
@@ -199,7 +213,7 @@ mixl_preference_space <- gmnl(
     brand.recognition_this = "n",
     past.use_this = "n"
     ),
-  R = 2000
+  R = 500
 )
 summary_model(mixl_preference_space)
 
