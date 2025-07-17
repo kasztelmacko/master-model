@@ -1,7 +1,7 @@
 setwd("DCE_design")
 library(tidyverse)
 
-raw_design <- read.csv("data/new_raw_design.csv", sep = ";")
+raw_design <- read.csv("data/newest_raw_design.csv", sep = ";")
 
 # config:
 type_conf <- c("burger_classic", "burger_premium", "bundle_classic", "bundle_premium")
@@ -79,4 +79,4 @@ final_design <- respondents %>%
   left_join(long_design, by = "block_id") %>%
   arrange(respondent_id, question_id, alternative_id)
 
-write.csv(final_design, "data/DCE_design_new.csv", row.names = FALSE)
+write.csv(final_design, "data/DCE_design_newest.csv", row.names = FALSE)
