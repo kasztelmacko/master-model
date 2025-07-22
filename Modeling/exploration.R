@@ -175,14 +175,9 @@ ggsave("plots/recall_recognition_plot.png",
 filtered_data <- filtered_data %>%
   mutate(
     # Group location
-    location_grouped = case_when(
-      location %in% c("miast-50", "miasto-50-150", "miasto-150-500") ~ "city_under_500k",
-      location == "miasto-500" ~ "city_over_500k",
-      location == "wies" ~ "rural"
-    ),
-    city_50_500 = ifelse(location_grouped %in% c("miasto-150-500", "miasto-50-150"), 1, 0),
-    city_over_500 = ifelse(location_grouped == "city_over_500k", 1, 0),
-    rural_or_small_city = ifelse(location_grouped %in% c("miast-50", "wies"), 1, 0),
+    city_50_500 = ifelse(location %in% c("miasto-150-500", "miasto-50-150"), 1, 0),
+    city_over_500 = ifelse(location == "miasto-500", 1, 0),
+    rural_or_small_city = ifelse(location %in% c("miast-50", "wies"), 1, 0),
 
     # Gender dummies
     is_female = ifelse(gender == "kobieta", 1, 0),
@@ -200,11 +195,20 @@ filtered_data <- filtered_data %>%
     eats_fastfood_rarely = ifelse(fast.food.frequency %in% c("rzadziej-niz-raz-w-miesiacu", "raz-w-miesiacu"), 1, 0)
   ) %>%
   select(
-    -location, -location_grouped,
+    -location,
     -gender,
     -education,
     -income,
     -fast.food.frequency
+  )
+
+filtered_data <- filtered_data %>%
+  mutate(
+    log_age = log(age + 1),
+    log_total_recalled = log(total_recalled + 1),
+    log_total_recognized = log(total_recognized + 1),
+    log_avg_price_guess_diff = log(avg_price_guess_diff + 1),
+    log_price = log(price + 1)
   )
 
 write.csv(filtered_data, "data/final_data/model_data.csv", row.names = FALSE)
