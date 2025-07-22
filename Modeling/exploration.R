@@ -3,9 +3,16 @@ library(dplyr)
 library(ggplot2)
 library(gridExtra)
 
-data <- read.csv("data/clean_data.csv")
-brand_recall_data <- read.csv("data/brand_recall.csv")
-brand_recognition_data <- read.csv("data/brand_recognition.csv")
+data <- read.csv("data/final_data/clean_data.csv")
+brand_recall_data <- read.csv("data/final_data/brand_recall.csv")
+brand_recognition_data <- read.csv("data/final_data/brand_recognition.csv")
+
+original_count <- data %>%
+  distinct(respondent_id) %>%
+  nrow()
+
+
+cat("Original number of respondent_id:", original_count, "\n")
 
 # filter out no_choice
 excluded_ids <- data %>%
@@ -18,26 +25,28 @@ excluded_ids <- data %>%
 filtered_data <- data %>%
   anti_join(excluded_ids, by = "respondent_id")
 
-original_count <- data %>%
-  distinct(respondent_id) %>%
-  nrow()
-
-
-cat("Original number of respondent_id:", original_count, "\n")
-
-# filter out age > 35
-filtered_data <- filtered_data %>%
-  filter(age <= 35)
-
-# filter small inne gender group (4 records)
-filtered_data <- filtered_data %>%
-  filter(gender != "inne")
 
 filtered_count <- filtered_data %>%
   distinct(respondent_id) %>%
   nrow()
-
 cat("Number of respondent_id in filtered_data:", filtered_count, "\n")
+
+# filter out age > 35
+filtered_data <- filtered_data %>%
+  filter(age <= 35)
+filtered_count <- filtered_data %>%
+  distinct(respondent_id) %>%
+  nrow()
+cat("Number of respondent_id in filtered_data:", filtered_count, "\n")
+
+# filter small inne gender group (4 records)
+filtered_data <- filtered_data %>%
+  filter(gender != "inne")
+filtered_count <- filtered_data %>%
+  distinct(respondent_id) %>%
+  nrow()
+cat("Number of respondent_id in filtered_data:", filtered_count, "\n")
+
 
 # create survey calls
 survey_cols <- c(
@@ -60,7 +69,7 @@ respondent_data <- filtered_data %>%
 
 # plot age distribution
 hist_plot <- ggplot(respondent_data, aes(x = age)) +
-  geom_histogram(binwidth = 3, fill = "white", color = "black") +
+  geom_histogram(binwidth = 1, fill = "white", color = "black") +
   theme_minimal() +
   theme(
     axis.title.x = element_blank(),
@@ -171,13 +180,12 @@ filtered_data <- filtered_data %>%
       location == "miasto-500" ~ "city_over_500k",
       location == "wies" ~ "rural"
     ),
-    city_under_500k = ifelse(location_grouped == "city_under_500k", 1, 0),
-    city_over_500k = ifelse(location_grouped == "city_over_500k", 1, 0),
-    rural = ifelse(location_grouped == "rural", 1, 0),
+    city_50_500 = ifelse(location_grouped %in% c("miasto-150-500", "miasto-50-150"), 1, 0),
+    city_over_500 = ifelse(location_grouped == "city_over_500k", 1, 0),
+    rural_or_small_city = ifelse(location_grouped %in% c("miast-50", "wies"), 1, 0),
 
     # Gender dummies
     is_female = ifelse(gender == "kobieta", 1, 0),
-    # is_male = ifelse(gender == "mezczyzna", 1, 0),
 
     # Education dummies
     is_graduated = ifelse(education == "wyzsze", 1, 0),
@@ -199,9 +207,4 @@ filtered_data <- filtered_data %>%
     -fast.food.frequency
   )
 
-filtered_data <- filtered_data %>%
-  mutate(
-    respondent_question_id = paste0(respondent_id, "_", question_id)
-  )
-
-write.csv(filtered_data, "data_new/filtered_data.csv", row.names = FALSE)
+write.csv(filtered_data, "data/final_data/model_data.csv", row.names = FALSE)
