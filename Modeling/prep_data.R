@@ -2,8 +2,8 @@ setwd("Modeling")
 library(dplyr)
 library(tidyr)
 # load data
-design <- read.csv("data/2/DCE_design_new.csv")
-survey <- read.csv("data/2/survey_results_new.csv")
+design <- read.csv("data/3/DCE_design_newest.csv")
+survey <- read.csv("data/3/survey_results.csv")
 
 # remove unnecessary columns
 survey <- survey %>%
@@ -216,7 +216,7 @@ brand_lists_cleaned <- survey %>%
     brand.recall = sapply(brand.recall, function(x) paste(x, collapse = "; ")),
     brand.recognition = sapply(brand.recognition, function(x) paste(x, collapse = "; "))
   )
-write.csv(brand_lists_cleaned, "data/2/brand_lists_cleaned.csv", row.names = FALSE)
+write.csv(brand_lists_cleaned, "data/3/brand_lists_cleaned.csv", row.names = FALSE)
 
 # create brand_recall and brand_recognition csv files
 brand_recall_df <- survey %>%
@@ -226,7 +226,7 @@ brand_recall_df <- survey %>%
   summarise(count = n(), .groups = "drop") %>%
   arrange(desc(count))
 
-write.csv(brand_recall_df, "data/2/brand_recall.csv", row.names = FALSE)
+write.csv(brand_recall_df, "data/3/brand_recall.csv", row.names = FALSE)
 
 brand_recognition_df <- survey %>%
   select(brand.recognition) %>%
@@ -235,7 +235,7 @@ brand_recognition_df <- survey %>%
   summarise(count = n(), .groups = "drop") %>%
   arrange(desc(count))
 
-write.csv(brand_recognition_df, "data/2/brand_recognition.csv", row.names = FALSE)
+write.csv(brand_recognition_df, "data/3/brand_recognition.csv", row.names = FALSE)
 
 # brand_lists_cleaned <- read.csv("data/brand_lists_cleaned.csv")
 # design <- design %>%
@@ -325,4 +325,4 @@ model_data <- design %>%
 str(model_data)
 
 # save data
-write.csv(model_data, "data/2/clean_data.csv", row.names = FALSE)
+write.csv(model_data, "data/3/clean_data.csv", row.names = FALSE)
