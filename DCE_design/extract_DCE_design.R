@@ -79,4 +79,4 @@ final_design <- respondents %>%
   left_join(long_design, by = "block_id") %>%
   arrange(respondent_id, question_id, alternative_id)
 
-write.csv(final_design, "data/DCE_design_newest.csv", row.names = FALSE)
+write.csv(final_design, "data/DCE_design_optimized.csv", row.names = FALSE)
