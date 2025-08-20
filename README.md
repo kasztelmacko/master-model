@@ -12,7 +12,6 @@ This repository contains all scripts, data, and outputs used in the Master Thesi
    │  │  ├─ raw_design_optimized.csv
    │  │  └─ raw_design_start.csv
    │  └─ extract_DCE_design.R    # R script to extract and prepare DCE designs
-
    └─ Modeling/                  # Main survey and modeling workflow
       ├─ data/                   # Collected and cleaned survey datasets
       │  ├─ 1/                   # First survey wave / dataset
