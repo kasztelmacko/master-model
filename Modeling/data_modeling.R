@@ -327,6 +327,9 @@ print(wtp_sims)
 ##########################################################################
 # MIXED PREFERENCE SPACE
 ##########################################################################
+null_model <- mlogit(choice ~ 1, data = mlogit_data)
+LL0 <- as.numeric(logLik(null_model))
+
 mxl_preference_space <- gmnl(
   choice ~ brand.recall_this + 
            brand.recognition_this + 
@@ -385,6 +388,7 @@ wtp_results <- wtp.gmnl(mxl_preference_space, wrt = "price")
 
 ## (FROM GMNL DOCS) Note that, wtp.gmnl does not include the negative sign.
 # so the WTP estimates are just ultiplied by -1
+
 #                              Estimate  Std. Error t-value  Pr(>|t|)
 # brand.recall_this           4.1749722   3.4594112 -1.2068 0.2274919
 # brand.recognition_this     -3.1694386   3.7025317  0.8560 0.3919871
@@ -404,62 +408,13 @@ wtp_results <- wtp.gmnl(mxl_preference_space, wrt = "price")
 # sd.gram                     0.0285681   0.0178267 -1.6025 0.1090352
 # sd.no_choice               19.3111333   7.1377196 -2.7055 0.0068201 ** 
 
-##########################################################################
-# MIXED WTP SPACE
-##########################################################################
-mxl_wtp_space <- logitr(
-  data           = mlogit_data,
-  outcome        = "choice",
-  obsID          = "obsID",
-  pars           = c("brand.recall_this",
-                     "brand.recognition_this",
-                     "past.use_this",
-                     "is_well_known",
-                     "is_bundle",
-                     "is_premium",
-                     "gram",
-                     "no_choice"),
-  randPars       = c(
-                        brand.recall_this      = "n",
-                        brand.recognition_this = "n",
-                        past.use_this          = "n",
-                        is_well_known          = "n",
-                        is_bundle              = "n",
-                        is_premium             = "n",
-                        gram                     = "n",
-                        no_choice                = "n"
-                   ),
-  numDraws       = 2000,
-  drawType       = "sobol",
-  numMultiStarts = 5,
-  scalePar = "price"
-)
-summary_model(mxl_wtp_space)
+LL_full <- as.numeric(logLik(mxl_preference_space))
+k <- length(coef(mxl_preference_space))
+mcfadden_r2 <- 1 - (LL_full / LL0)
+mcfadden_r2_adj <- 1 - ((LL_full - k) / LL0)
 
-# Model Coefficients:
-#                              Estimate  Std. Error z-value  Pr(>|z|)
-# brand.recall_this           5.4532725   3.0916541  1.7639  0.077754 .
-# brand.recognition_this     -5.1109302   3.2230702 -1.5857  0.112800
-# past.use_this               4.2986757   2.9330200  1.4656  0.142753
-# is_well_known               7.5409075   1.8785139  4.0143 5.962e-05 ***
-# is_bundle                  19.2908798   2.1017123  9.1786 < 2.2e-16 ***
-# is_premium                  5.3851850   1.6482709  3.2672  0.001086 **
-# gram                        0.0186434   0.0091409  2.0396  0.041395 *
-# no_choice                 -23.7043641   4.5408976 -5.2202 1.787e-07 ***
-# sd_brand.recall_this       -0.1431979   8.7039744 -0.0165  0.986874
-# sd_brand.recognition_this   7.1390456  13.6844235  0.5217  0.601885
-# sd_past.use_this           -2.7998383  70.6579677 -0.0396  0.968392
-# sd_is_well_known           -0.5463545  19.5681517 -0.0279  0.977725
-# sd_is_bundle               16.0295386   5.6159698  2.8543  0.004313 **
-# sd_is_premium              18.1518434   5.7081247  3.1800  0.001473 ** 
-
-# Log-Likelihood:          -964.8385138
-# Null Log-Likelihood:    -1164.4872633
-# AIC:                     1959.6770276
-# BIC:                     2030.6781000
-# McFadden R2:                0.1714478
-# Adj McFadden R2:            0.1585666
-# Number of Observations:   840.0000000
+mcfadden_r2
+mcfadden_r2_adj
 
 ##########################################################################
 # MIXED WITH CONSUMER CHARACTERISTICS
