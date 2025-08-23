@@ -217,6 +217,17 @@ summary_model(mnl_wtp_space)
 #                           LATENT CLASS                                 # 
 ##########################################################################
 
+lc_null_model <- gmnl(
+  choice ~ 0 | 0 | 0 | 0 | 
+    1 + norm_age + is_female + income_high + income_low + 
+    norm_total_recalled + norm_total_recognized + 
+    norm_avg_price_guess_diff + eats_fastfood_weekly,
+  data = mlogit_data,
+  model = "lc",
+  Q = 2,
+  R = 2000
+)
+
 ##########################################################################
 # LC PREFERENCE SPACE
 ##########################################################################
@@ -249,6 +260,9 @@ lc_preference_space <- gmnl(
 )
 summary_model(lc_preference_space, lc_null_model)
 show_latent_class_statistics(lc_preference_space)
+
+probs <- lc_preference_space$Qir
+class1_probs <- probs[, 1]
 
 # Coefficients:
 #                                     Estimate  Std. Error z-value  Pr(>|z|)    
@@ -313,58 +327,82 @@ print(wtp_sims)
 ##########################################################################
 # MIXED PREFERENCE SPACE
 ##########################################################################
-mxl_preference_space <- logitr(
-  data           = mlogit_data,
-  outcome        = "choice",
-  obsID          = "obsID",
-  pars           = c("brand.recall_this",
-                     "brand.recognition_this",
-                     "past.use_this",
-                     "is_well_known",
-                     "is_bundle",
-                     "is_premium",
-                     "price",
-                     "gram",
-                     "no_choice"),
-  randPars       = c(
-                        brand.recall_this      = "n",
-                        brand.recognition_this = "n",
-                        past.use_this          = "n",
-                        is_well_known          = "n",
-                        is_bundle              = "n",
-                        is_premium             = "n"
-                   ),
-  numDraws       = 2000,
-  drawType       = "sobol",
-  numMultiStarts = 5,
+mxl_preference_space <- gmnl(
+  choice ~ brand.recall_this + 
+           brand.recognition_this + 
+           past.use_this +
+           is_well_known + 
+           is_bundle + 
+           is_premium +
+           price +
+           gram +
+           no_choice | 0, 
+  data   = mlogit_data,
+  model="mixl",
+  ranp   = c(
+    brand.recall_this      = "n",
+    brand.recognition_this = "n",
+    past.use_this          = "n",
+    is_well_known          = "n",
+    is_bundle              = "n",
+    is_premium             = "n",
+    price                  = "n",
+    gram                   = "n",
+    no_choice              = "n"
+  ),
+  R      = 2000,
+  halton = NA,
+  panel  = TRUE,
+  keepDraws = TRUE
 )
 summary_model(mxl_preference_space)
 
-# Model Coefficients:
-#                             Estimate Std. Error z-value  Pr(>|z|)
-# brand.recall_this          0.3729379  0.2205769  1.6907 0.0908868 .
-# brand.recognition_this    -0.3488386  0.2229317 -1.5648 0.1176351
-# past.use_this              0.2870110  0.1503341  1.9092 0.0562423 .
-# is_well_known              0.5136553  0.1335289  3.8468 0.0001197 ***
-# is_bundle                  1.3162053  0.2196479  5.9923 2.068e-09 ***
-# is_premium                 0.3646263  0.1118403  3.2602 0.0011132 **
-# price                     -0.0683370  0.0128002 -5.3387 9.360e-08 ***
-# gram                       0.0012714  0.0006384  1.9915 0.0464295 *
-# no_choice                 -1.6109815  0.3212582 -5.0146 5.314e-07 ***
-# sd_brand.recall_this       0.0205741  0.5978003  0.0344 0.9725452
-# sd_brand.recognition_this  0.4585851  0.9254080  0.4955 0.6202126
-# sd_past.use_this           0.3763709  1.5515963  0.2426 0.8083384
-# sd_is_well_known           0.0943225  1.3981031  0.0675 0.9462118
-# sd_is_bundle               1.0936198  0.5054624  2.1636 0.0304949 *
-# sd_is_premium             -1.2400756  0.4936724 -2.5119 0.0120069 *
+#                              Estimate  Std. Error z-value  Pr(>|z|)
+# brand.recall_this          0.35779591  0.29367509  1.2183 0.2230950
+# brand.recognition_this    -0.27162149  0.31515178 -0.8619 0.3887562    
+# past.use_this              0.28071655  0.19523623  1.4378 0.1504822
+# is_well_known              0.62609482  0.16394698  3.8189 0.0001341 ***
+# is_bundle                  1.58649686  0.17440471  9.0966 < 2.2e-16 ***
+# is_premium                 0.33917665  0.19123042  1.7737 0.0761203 .
+# price                     -0.08570019  0.01109736 -7.7226 1.132e-14 ***
+# gram                       0.00114733  0.00070744  1.6218 0.1048437
+# no_choice                 -2.98460740  0.53038789 -5.6272 1.831e-08 ***
+# sd.brand.recall_this       0.68422405  0.61115177  1.1196 0.2628992
+# sd.brand.recognition_this  0.79334569  0.52381034  1.5146 0.1298822
+# sd.past.use_this           1.23885560  0.27524140  4.5010 6.764e-06 ***
+# sd.is_well_known           0.85015625  0.22783281  3.7315 0.0001903 ***
+# sd.is_bundle               0.92230857  0.22101593  4.1730 3.006e-05 ***
+# sd.is_premium              1.81440721  0.23204302  7.8193 5.329e-15 ***
+# sd.price                   0.05917065  0.01304732  4.5351 5.758e-06 ***
+# sd.gram                    0.00244829  0.00148411  1.6497 0.0990105 .
+# sd.no_choice               1.65496779  0.61037471  2.7114 0.0067000 **
 
-# Log-Likelihood:          -964.8117023
-# Null Log-Likelihood:    -1164.4872633
-# AIC:                     1959.6234046
-# BIC:                     2030.6244000
-# McFadden R2:                0.1714708
-# Adj McFadden R2:            0.1585896
-# Number of Observations:   840.0000000
+# Log Likelihood: -880.03
+# AIC: 1796.058
+# BIC: 1881.26
+
+wtp_results <- wtp.gmnl(mxl_preference_space, wrt = "price")
+
+## (FROM GMNL DOCS) Note that, wtp.gmnl does not include the negative sign.
+# so the WTP estimates are just ultiplied by -1
+#                              Estimate  Std. Error t-value  Pr(>|t|)
+# brand.recall_this           4.1749722   3.4594112 -1.2068 0.2274919
+# brand.recognition_this     -3.1694386   3.7025317  0.8560 0.3919871
+# past.use_this               3.2755651   2.2910138 -1.4297 0.1527903
+# is_well_known               7.3056410   1.9320752 -3.7812 0.0001560 ***
+# is_bundle                  18.5121744   2.3075349 -8.0225 1.110e-15 ***
+# is_premium                  3.9577118   2.2267851 -1.7773 0.0755154 .  
+# gram                        0.0133877   0.0084335 -1.5874 0.1124115
+# no_choice                  -34.8261469   6.1624813  5.6513 1.592e-08 ***
+# sd.brand.recall_this        7.9839269   7.1688377 -1.1137 0.2654084
+# sd.brand.recognition_this   9.2572221   6.1708881 -1.5001 0.1335770
+# sd.past.use_this           14.4556926   3.3843992 -4.2713 1.944e-05 ***
+# sd.is_well_known            9.9201210   2.6690612 -3.7167 0.0002018 ***
+# sd.is_bundle               10.7620365   2.4681484 -4.3604 1.298e-05 ***
+# sd.is_premium              21.1715659   3.2813293 -6.4521 1.103e-10 ***
+# sd.price                    0.6904378   0.1565343 -4.4108 1.030e-05 ***
+# sd.gram                     0.0285681   0.0178267 -1.6025 0.1090352
+# sd.no_choice               19.3111333   7.1377196 -2.7055 0.0068201 ** 
 
 ##########################################################################
 # MIXED WTP SPACE
@@ -387,7 +425,9 @@ mxl_wtp_space <- logitr(
                         past.use_this          = "n",
                         is_well_known          = "n",
                         is_bundle              = "n",
-                        is_premium             = "n"
+                        is_premium             = "n",
+                        gram                     = "n",
+                        no_choice                = "n"
                    ),
   numDraws       = 2000,
   drawType       = "sobol",
